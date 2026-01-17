@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ChatPanel } from "@/components/chat/ChatPanel";
+import { ChatTrigger } from "@/components/chat/ChatTrigger";
+import { SelectionPopover } from "@/components/chat/SelectionPopover";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "CleverCourse",
-  description: "An AI-powered learning management system for creating intelligent and personalized courses",
+  description:
+    "An AI-powered learning management system for creating intelligent and personalized courses",
 };
 
 export default function RootLayout({
@@ -28,6 +32,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <ChatPanel />
+        <ChatTrigger />
+        <SelectionPopover />
       </body>
     </html>
   );
