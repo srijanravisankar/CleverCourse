@@ -175,6 +175,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
   const [enableHighlight, setEnableHighlight] = React.useState(true)
   const [currentSentenceIndex, setCurrentSentenceIndex] = React.useState(-1)
   const [sentenceData, setSentenceData] = React.useState<Array<{ markdown: string; plainText: string; isCode: boolean }>>([])
+  const [restartKey, setRestartKey] = React.useState(0) // Used to force slideshow restart on navigation
   
   const speechRef = React.useRef<SpeechSynthesisUtterance | null>(null)
   const totalPages = pages.length
@@ -291,7 +292,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
       cancelled = true
       window.speechSynthesis?.cancel()
     }
-  }, [isPlaying, currentPage, sentenceData.length, enableTTS, speakSentence, totalPages])
+  }, [isPlaying, currentPage, sentenceData.length, enableTTS, speakSentence, totalPages, restartKey])
 
   // Reset sentence index only when PAGE changes (not when play/pause)
   const prevPageRef = React.useRef(currentPage)
@@ -303,7 +304,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
     }
   }, [currentPage])
 
-  const handlePlay = () => {
+  const handlePlay = React.useCallback(() => {
     if (isPlaying) {
       // Pause - keep position for resume (resumeIndexRef already has current position)
       setIsPlaying(false)
@@ -320,7 +321,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
       }
       // Otherwise resumeIndexRef already has the correct position
     }
-  }
+  }, [isPlaying, currentSentenceIndex])
 
   const handleStop = () => {
     setIsPlaying(false)
@@ -329,6 +330,26 @@ export function ArticleView({ pages }: ArticleViewProps) {
     resumeIndexRef.current = 0 // Reset resume position
     setCurrentSentenceIndex(-1)
   }
+
+  // Navigate to previous sentence
+  const handlePrevSentence = React.useCallback(() => {
+    if (!isSlideshowActive || sentenceData.length === 0) return
+    
+    window.speechSynthesis?.cancel()
+    
+    // Find previous non-code sentence
+    let prevIndex = currentSentenceIndex - 1 
+    while (prevIndex >= 0 && sentenceData[prevIndex].isCode) {
+      prevIndex--
+    }
+    
+    if (prevIndex >= 0) {
+      resumeIndexRef.current = prevIndex
+      setCurrentSentenceIndex(prevIndex)
+      // Restart slideshow from new position (keeps playing)
+      setRestartKey(k => k + 1)
+    }
+  }, [isSlideshowActive, currentSentenceIndex, sentenceData])
 
   // Navigate to next sentence
   const handleNextSentence = React.useCallback(() => {
@@ -343,26 +364,10 @@ export function ArticleView({ pages }: ArticleViewProps) {
     }
     
     if (nextIndex < sentenceData.length) {
-      setCurrentSentenceIndex(nextIndex)
       resumeIndexRef.current = nextIndex
-    }
-  }, [isSlideshowActive, currentSentenceIndex, sentenceData])
-
-  // Navigate to previous sentence
-  const handlePrevSentence = React.useCallback(() => {
-    if (!isSlideshowActive || sentenceData.length === 0) return
-    
-    window.speechSynthesis?.cancel()
-    
-    // Find previous non-code sentence
-    let prevIndex = currentSentenceIndex - 1
-    while (prevIndex >= 0 && sentenceData[prevIndex].isCode) {
-      prevIndex--
-    }
-    
-    if (prevIndex >= 0) {
-      setCurrentSentenceIndex(prevIndex)
-      resumeIndexRef.current = prevIndex
+      setCurrentSentenceIndex(nextIndex)
+      // Restart slideshow from new position (keeps playing)
+      setRestartKey(k => k + 1)
     }
   }, [isSlideshowActive, currentSentenceIndex, sentenceData])
 
@@ -386,7 +391,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSlideshowActive, handleNextSentence, handlePrevSentence])
+  }, [isSlideshowActive, handleNextSentence, handlePrevSentence, handlePlay])
 
   const handleNext = () => {
     if (isPlaying) {
