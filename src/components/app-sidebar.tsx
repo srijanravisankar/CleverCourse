@@ -16,6 +16,7 @@ import {
   Network,
 } from "lucide-react";
 
+import { CreateCourseDialog } from "@/components/course/CreateCourseDialog";
 import {
   Collapsible,
   CollapsibleContent,
@@ -60,12 +61,20 @@ const COURSE_DATA = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [showCreateDialog, setShowCreateDialog] = React.useState(false);
+
   return (
-    <Sidebar
-      collapsible="icon"
-      className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
-      {...props}
-    >
+    <>
+      <CreateCourseDialog 
+        open={showCreateDialog} 
+        onClose={() => setShowCreateDialog(false)} 
+      />
+      
+      <Sidebar
+        collapsible="icon"
+        className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
+        {...props}
+      >
       {/* FIRST SIDEBAR: Course Icons (Discord Style) */}
       <Sidebar
         collapsible="none"
@@ -88,7 +97,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Create New Course">
+                <SidebarMenuButton 
+                  tooltip="Create New Course"
+                  onClick={() => setShowCreateDialog(true)}
+                >
                   <Plus className="size-4" />
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -140,6 +152,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarContent>
       </Sidebar>
     </Sidebar>
+    </>
   );
 }
 
