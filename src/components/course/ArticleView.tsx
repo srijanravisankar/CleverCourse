@@ -2,9 +2,22 @@
 
 import * as React from "react"
 import ReactMarkdown from "react-markdown"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import rehypeRaw from "rehype-raw"
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Play, 
+  Pause, 
+  Volume2, 
+  VolumeX, 
+  Highlighter,
+  HighlighterIcon,
+  Square
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Toggle } from "@/components/ui/toggle"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface ArticlePage {
   pageTitle: string
@@ -15,13 +28,388 @@ interface ArticleViewProps {
   pages: ArticlePage[]
 }
 
+// Helper to extract plain text from markdown (for TTS)
+function extractPlainText(markdown: string): string {
+  return markdown
+    .replace(/#{1,6}\s/g, "") // Remove headers
+    .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove bold
+    .replace(/\*([^*]+)\*/g, "$1") // Remove italic
+    .replace(/`([^`]+)`/g, "$1") // Remove inline code
+    .replace(/```[\s\S]*?```/g, "") // Remove code blocks
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Remove links
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "") // Remove images
+    .replace(/[-*+]\s/g, "") // Remove list markers
+    .replace(/\d+\.\s/g, "") // Remove numbered list markers
+    .replace(/>\s/g, "") // Remove blockquote markers
+    .replace(/\n+/g, " ") // Replace newlines with spaces
+    .trim()
+}
+
+// Check if a block is a code block
+function isCodeBlock(block: string): boolean {
+  const trimmed = block.trim()
+  // Fenced code blocks
+  if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+    return true
+  }
+  // Indented code blocks (4 spaces or 1 tab at start of every line)
+  const lines = trimmed.split('\n')
+  if (lines.length > 0 && lines.every(line => line === '' || line.startsWith('    ') || line.startsWith('\t'))) {
+    return true
+  }
+  return false
+}
+
+// Split MARKDOWN into sentences while preserving formatting
+// Returns array of { markdown: string, plainText: string, isCode: boolean }
+function splitMarkdownIntoSentences(markdown: string): Array<{ markdown: string; plainText: string; isCode: boolean }> {
+  const results: Array<{ markdown: string; plainText: string; isCode: boolean }> = []
+  
+  // First, split out code blocks to preserve them
+  // Match fenced code blocks (``` or ~~~)
+  const codeBlockRegex = /(```[\s\S]*?```|~~~[\s\S]*?~~~)/g
+  const parts: Array<{ content: string; isCode: boolean }> = []
+  
+  let lastIndex = 0
+  let match
+  while ((match = codeBlockRegex.exec(markdown)) !== null) {
+    // Add text before code block
+    if (match.index > lastIndex) {
+      parts.push({ content: markdown.slice(lastIndex, match.index), isCode: false })
+    }
+    // Add code block
+    parts.push({ content: match[0], isCode: true })
+    lastIndex = match.index + match[0].length
+  }
+  // Add remaining text
+  if (lastIndex < markdown.length) {
+    parts.push({ content: markdown.slice(lastIndex), isCode: false })
+  }
+  
+  // Process each part
+  for (const part of parts) {
+    if (part.isCode) {
+      // Code blocks are kept as single units, not read aloud
+      results.push({
+        markdown: part.content,
+        plainText: '', // Empty so it won't be spoken
+        isCode: true
+      })
+      continue
+    }
+    
+    // Split non-code content by paragraphs
+    const blocks = part.content.split(/\n\n+/)
+    
+    for (const block of blocks) {
+      const trimmedBlock = block.trim()
+      if (!trimmedBlock) continue
+      
+      // Check if it's a header - treat as single sentence
+      if (/^#{1,6}\s/.test(trimmedBlock)) {
+        results.push({
+          markdown: trimmedBlock,
+          plainText: extractPlainText(trimmedBlock),
+          isCode: false
+        })
+        continue
+      }
+      
+      // Check if it's a list item
+      if (/^[-*+]\s|^\d+\.\s/.test(trimmedBlock)) {
+        // Split list into items
+        const items = trimmedBlock.split(/\n(?=[-*+]\s|\d+\.\s)/)
+        for (const item of items) {
+          if (item.trim()) {
+            results.push({
+              markdown: item.trim(),
+              plainText: extractPlainText(item),
+              isCode: false
+            })
+          }
+        }
+        continue
+      }
+      
+      // For regular paragraphs, split by sentence-ending punctuation
+      let remaining = trimmedBlock
+      const sentenceRegex = /^([\s\S]*?[.!?])(?:\s|$)/
+      
+      while (remaining.trim()) {
+        const match = remaining.match(sentenceRegex)
+        if (match) {
+          const sentence = match[1].trim()
+          if (sentence) {
+            results.push({
+              markdown: sentence,
+              plainText: extractPlainText(sentence),
+              isCode: false
+            })
+          }
+          remaining = remaining.slice(match[0].length)
+        } else {
+          // No more sentence endings, take the rest
+          if (remaining.trim()) {
+            results.push({
+              markdown: remaining.trim(),
+              plainText: extractPlainText(remaining.trim()),
+              isCode: false
+            })
+          }
+          break
+        }
+      }
+    }
+  }
+  
+  // Filter out entries with no plain text, but KEEP code blocks
+  return results.filter(s => s.plainText.length > 0 || s.isCode)
+}
+
 export function ArticleView({ pages }: ArticleViewProps) {
   const [currentPage, setCurrentPage] = React.useState(0)
+  const [isPlaying, setIsPlaying] = React.useState(false)
+  const [isSpeaking, setIsSpeaking] = React.useState(false)
+  const [enableTTS, setEnableTTS] = React.useState(true)
+  const [enableHighlight, setEnableHighlight] = React.useState(true)
+  const [currentSentenceIndex, setCurrentSentenceIndex] = React.useState(-1)
+  const [sentenceData, setSentenceData] = React.useState<Array<{ markdown: string; plainText: string; isCode: boolean }>>([])
+  
+  const speechRef = React.useRef<SpeechSynthesisUtterance | null>(null)
   const totalPages = pages.length
   const activePage = pages[currentPage]
 
-  const handleNext = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
-  const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 0))
+  // Extract sentences when page changes - now with markdown preserved
+  React.useEffect(() => {
+    const data = splitMarkdownIntoSentences(activePage.content)
+    setSentenceData(data)
+    setCurrentSentenceIndex(-1)
+  }, [activePage.content])
+
+  // Cleanup speech on unmount
+  React.useEffect(() => {
+    return () => {
+      window.speechSynthesis?.cancel()
+    }
+  }, [])
+
+  // Handle speaking a sentence (uses plain text for TTS)
+  // Skips code blocks automatically (they have empty plainText)
+  const speakSentence = React.useCallback((sentenceIndex: number) => {
+    if (!enableTTS || sentenceIndex >= sentenceData.length) {
+      return Promise.resolve()
+    }
+
+    const sentence = sentenceData[sentenceIndex]
+    
+    // Skip code blocks - they have empty plainText
+    if (sentence.isCode || !sentence.plainText) {
+      return Promise.resolve()
+    }
+
+    return new Promise<void>((resolve) => {
+      window.speechSynthesis.cancel()
+      
+      // Use plain text for speech
+      const utterance = new SpeechSynthesisUtterance(sentence.plainText)
+      utterance.rate = 1.0
+      utterance.pitch = 1.0
+      
+      utterance.onend = () => {
+        setIsSpeaking(false)
+        resolve()
+      }
+      
+      utterance.onerror = () => {
+        setIsSpeaking(false)
+        resolve()
+      }
+
+      speechRef.current = utterance
+      setIsSpeaking(true)
+      window.speechSynthesis.speak(utterance)
+    })
+  }, [enableTTS, sentenceData])
+
+  // Main slideshow loop
+  React.useEffect(() => {
+    if (!isPlaying) return
+
+    let cancelled = false
+
+    const runSlideshow = async () => {
+      for (let i = currentSentenceIndex === -1 ? 0 : currentSentenceIndex; i < sentenceData.length; i++) {
+        if (cancelled) break
+
+        setCurrentSentenceIndex(i)
+        
+        const sentence = sentenceData[i]
+        
+        // Skip code blocks quickly without reading
+        if (sentence.isCode) {
+          await new Promise(resolve => setTimeout(resolve, 500)) // Brief pause to show it
+          continue
+        }
+        
+        if (enableTTS) {
+          await speakSentence(i)
+        } else {
+          // If TTS disabled, just pause for reading time based on sentence length
+          const readingTime = Math.max(2000, sentence.plainText.length * 50)
+          await new Promise(resolve => setTimeout(resolve, readingTime))
+        }
+
+        if (cancelled) break
+      }
+
+      if (cancelled) return
+
+      // Move to next page if available
+      if (currentPage < totalPages - 1) {
+        setCurrentPage(prev => prev + 1)
+        setCurrentSentenceIndex(-1)
+      } else {
+        // End of slideshow
+        setIsPlaying(false)
+        setCurrentSentenceIndex(-1)
+      }
+    }
+
+    runSlideshow()
+
+    return () => {
+      cancelled = true
+      window.speechSynthesis?.cancel()
+    }
+  }, [isPlaying, currentPage, sentenceData.length, enableTTS, speakSentence, totalPages])
+
+  // Reset sentence index when page changes during slideshow
+  React.useEffect(() => {
+    if (isPlaying) {
+      setCurrentSentenceIndex(0)
+    }
+  }, [currentPage, isPlaying])
+
+  const handlePlay = () => {
+    if (isPlaying) {
+      setIsPlaying(false)
+      window.speechSynthesis?.cancel()
+      setCurrentSentenceIndex(-1)
+    } else {
+      setIsPlaying(true)
+      setCurrentSentenceIndex(0)
+    }
+  }
+
+  const handleStop = () => {
+    setIsPlaying(false)
+    window.speechSynthesis?.cancel()
+    setCurrentSentenceIndex(-1)
+  }
+
+  const handleNext = () => {
+    if (isPlaying) {
+      window.speechSynthesis?.cancel()
+    }
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
+    setCurrentSentenceIndex(-1)
+  }
+
+  const handlePrev = () => {
+    if (isPlaying) {
+      window.speechSynthesis?.cancel()
+    }
+    setCurrentPage((prev) => Math.max(prev - 1, 0))
+    setCurrentSentenceIndex(-1)
+  }
+
+  // Base markdown components
+  const baseComponents = {
+    h3: ({ ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
+      <h3 className="text-xl font-semibold mt-6 mb-4" {...props} />
+    ),
+    p: ({ ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
+      <p className="leading-7 mb-4 text-foreground/90" {...props} />
+    ),
+    ul: ({ ...props }: React.HTMLAttributes<HTMLUListElement>) => (
+      <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />
+    ),
+    li: ({ ...props }: React.HTMLAttributes<HTMLLIElement>) => (
+      <li className="leading-7" {...props} />
+    ),
+    code: ({ ...props }: React.HTMLAttributes<HTMLElement>) => (
+      <code className="bg-muted px-1.5 py-0.5 rounded-sm font-mono text-sm" {...props} />
+    ),
+    pre: ({ ...props }: React.HTMLAttributes<HTMLPreElement>) => (
+      <pre className="bg-slate-950 text-slate-50 p-4 rounded-lg overflow-x-auto my-6" {...props} />
+    ),
+  }
+
+  // Render content with sentence-level highlighting
+  // Each sentence is rendered as its own ReactMarkdown, wrapped in a span for highlighting
+  const HighlightedContent = React.useMemo(() => {
+    // When not in slideshow mode with highlighting, render markdown normally
+    if (!isPlaying || !enableHighlight || currentSentenceIndex < 0 || sentenceData.length === 0) {
+      return (
+        <ReactMarkdown components={baseComponents} rehypePlugins={[rehypeRaw]}>
+          {activePage.content}
+        </ReactMarkdown>
+      )
+    }
+
+    // During slideshow with highlighting, render each sentence separately
+    return (
+      <div className="prose prose-slate dark:prose-invert max-w-none">
+        {sentenceData.map((sentence, idx) => {
+          const isCurrentSentence = idx === currentSentenceIndex && !sentence.isCode
+          const isHeader = sentence.markdown.startsWith('#')
+          const isList = /^[-*+]\s|^\d+\.\s/.test(sentence.markdown)
+          const isCode = sentence.isCode
+          
+          // Code blocks are rendered without highlighting wrapper
+          if (isCode) {
+            return (
+              <div key={idx} className="my-4">
+                <ReactMarkdown 
+                  components={baseComponents}
+                  rehypePlugins={[rehypeRaw]}
+                >
+                  {sentence.markdown}
+                </ReactMarkdown>
+              </div>
+            )
+          }
+          
+          // Wrap each sentence's markdown in a span with conditional highlighting
+          return (
+            <span
+              key={idx}
+              className={`transition-all duration-200 ${
+                isCurrentSentence 
+                  ? 'bg-yellow-300 dark:bg-yellow-500 rounded px-1 py-0.5' 
+                  : ''
+              }`}
+              style={{ display: isHeader || isList ? 'block' : 'inline' }}
+            >
+              <ReactMarkdown 
+                components={{
+                  ...baseComponents,
+                  // Override p to use inline span for continuous text flow
+                  p: ({ children }) => <>{children}{' '}</>,
+                  h3: ({ ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
+                    <h3 className="text-xl font-semibold mt-6 mb-4 inline" {...props} />
+                  ),
+                }}
+                rehypePlugins={[rehypeRaw]}
+              >
+                {sentence.markdown}
+              </ReactMarkdown>
+            </span>
+          )
+        })}
+      </div>
+    )
+  }, [activePage.content, isPlaying, enableHighlight, currentSentenceIndex, sentenceData])
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full py-8 px-4">
@@ -31,29 +419,105 @@ export function ArticleView({ pages }: ArticleViewProps) {
             <CardTitle className="text-3xl font-bold tracking-tight">
               {activePage.pageTitle}
             </CardTitle>
-            <span className="text-sm font-medium text-muted-foreground bg-secondary px-3 py-1 rounded-full">
-              Page {currentPage + 1} of {totalPages}
-            </span>
+            <div className="flex items-center gap-2">
+              {/* Slideshow Controls */}
+              <TooltipProvider>
+                <div className="flex items-center gap-1 mr-4 bg-secondary rounded-full p-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={isPlaying ? "default" : "ghost"}
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        onClick={handlePlay}
+                      >
+                        {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {isPlaying ? "Pause slideshow" : "Start slideshow"}
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {isPlaying && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full"
+                          onClick={handleStop}
+                        >
+                          <Square className="size-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Stop slideshow</TooltipContent>
+                    </Tooltip>
+                  )}
+
+                  {isPlaying && (
+                    <>
+                      <div className="w-px h-5 bg-border mx-1" />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Toggle
+                            pressed={enableTTS}
+                            onPressedChange={setEnableTTS}
+                            size="sm"
+                            className="h-8 w-8 rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                          >
+                            {enableTTS ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+                          </Toggle>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {enableTTS ? "Disable voice" : "Enable voice"}
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Toggle
+                            pressed={enableHighlight}
+                            onPressedChange={setEnableHighlight}
+                            size="sm"
+                            className="h-8 w-8 rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                          >
+                            <Highlighter className="size-4" />
+                          </Toggle>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {enableHighlight ? "Disable highlight" : "Enable highlight"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
+                </div>
+              </TooltipProvider>
+
+              <span className="text-sm font-medium text-muted-foreground bg-secondary px-3 py-1 rounded-full">
+                Page {currentPage + 1} of {totalPages}
+              </span>
+            </div>
           </div>
+
+          {/* Progress indicator during slideshow */}
+          {isPlaying && sentenceData.length > 0 && (
+            <div className="mt-4">
+              <div className="h-1 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all duration-300"
+                  style={{ width: `${((currentSentenceIndex + 1) / sentenceData.length) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Sentence {currentSentenceIndex + 1} of {sentenceData.length}
+              </p>
+            </div>
+          )}
         </CardHeader>
 
         <CardContent className="flex-1 pt-8 prose prose-slate dark:prose-invert max-w-none">
-          {/* Using react-markdown to render the content */}
-          <ReactMarkdown
-            components={{
-              h3: ({ ...props }) => <h3 className="text-xl font-semibold mt-6 mb-4" {...props} />,
-              p: ({ ...props }) => <p className="leading-7 mb-4 text-foreground/90" {...props} />,
-              ul: ({ ...props }) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />,
-              code: ({ ...props }) => (
-                <code className="bg-muted px-1.5 py-0.5 rounded-sm font-mono text-sm" {...props} />
-              ),
-              pre: ({ ...props }) => (
-                <pre className="bg-slate-950 text-slate-50 p-4 rounded-lg overflow-x-auto my-6" {...props} />
-              ),
-            }}
-          >
-            {activePage.content}
-          </ReactMarkdown>
+          {HighlightedContent}
         </CardContent>
 
         <CardFooter className="border-t pt-6 flex items-center justify-between">

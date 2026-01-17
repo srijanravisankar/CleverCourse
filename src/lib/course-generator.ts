@@ -372,6 +372,7 @@ async function generateSection(
       responseMimeType: "application/json",
       responseSchema: courseGenerationSchema,
       temperature: 0.7,
+      maxOutputTokens: 8192, // Increase output token limit to prevent truncation
     },
   });
 
@@ -434,7 +435,25 @@ Use these materials as reference to ensure accuracy and relevance.`
     try {
       const result = await model.generateContent(prompt);
       const responseText = result.response.text();
-      const parsed = JSON.parse(responseText) as GeneratedSection;
+      
+      let parsed: GeneratedSection;
+      try {
+        parsed = JSON.parse(responseText) as GeneratedSection;
+      } catch (parseError) {
+        // JSON parsing failed - this is usually due to truncation
+        console.error(
+          `JSON parse error for section ${sectionNumber} (attempt ${attempt + 1}/${maxRetries}):`,
+          parseError instanceof Error ? parseError.message : parseError
+        );
+        
+        // If we have more retries, try again
+        if (attempt < maxRetries - 1) {
+          console.log(`Retrying section ${sectionNumber} due to malformed JSON...`);
+          await sleep(2000); // Wait 2 seconds before retry
+          continue;
+        }
+        throw parseError;
+      }
 
       // Validate the response has required fields
       if (
@@ -459,6 +478,15 @@ Use these materials as reference to ensure accuracy and relevance.`
         );
         await sleep(retryDelay);
         continue;
+      }
+      
+      // Check if this is a JSON parse error (handled above but just in case)
+      if (error instanceof SyntaxError) {
+        if (attempt < maxRetries - 1) {
+          console.log(`Retrying section ${sectionNumber} due to JSON error...`);
+          await sleep(2000);
+          continue;
+        }
       }
 
       // For non-rate-limit errors, throw immediately
