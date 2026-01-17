@@ -497,17 +497,17 @@ export function ArticleView({ pages }: ArticleViewProps) {
   }, [activePage.content, isSlideshowActive, enableHighlight, currentSentenceIndex, sentenceData])
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full py-8 px-4">
+    <div className="flex flex-col gap-6 max-w-4xl w-full rounded-none">
       <Card className="min-h-[600px] flex flex-col shadow-sm border-none bg-background">
-        <CardHeader className="border-b pb-6">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-3xl font-bold tracking-tight">
+        <CardHeader className="">
+          <div className="flex items-center justify-end">
+            {/* <CardTitle className="text-3xl font-bold tracking-tight">
               {activePage.pageTitle}
-            </CardTitle>
+            </CardTitle> */}
             <div className="flex items-center gap-2">
               {/* Slideshow Controls */}
               <TooltipProvider>
-                <div className="flex items-center gap-1 mr-2 bg-secondary rounded-full p-1 px-2">
+                <div className="flex items-center gap-1 mr-2 bg-secondary rounded-full p-1 px-2 border-1 border-accent-foreground/50">
                   
                   {isSlideshowActive && (
                     <Tooltip>
@@ -619,18 +619,38 @@ export function ArticleView({ pages }: ArticleViewProps) {
                 </div>
               </TooltipProvider>
 
-              <span className="text-sm font-medium text-muted-foreground bg-secondary px-3 py-1 rounded-full inline-flex items-center gap-2 whitespace-nowrap flex-shrink-0">
+              {/* <span className="text-sm font-medium text-muted-foreground bg-secondary px-2 py-1 rounded-full inline-flex items-center gap-2 whitespace-nowrap flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrev}
+                  disabled={currentPage === 0}
+                  className="gap-2 rounded-full"
+                >
+                  <ChevronLeft className="size-4" />
+                </Button>
+
                 Page {currentPage + 1} of {totalPages}
-              </span>
+
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleNext}
+                  disabled={currentPage === totalPages - 1}
+                  className="gap-2 rounded-full"
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </span> */}
             </div>
           </div>
 
           {/* Progress indicator during slideshow */}
           {isSlideshowActive && sentenceData.length > 0 && (
-            <div className="mt-4">
-              <div className="h-1 bg-muted rounded-full overflow-hidden">
+            <div className="mt-3 flex flex-col items-end">
+              <div className="h-1 bg-muted rounded-full overflow-hidden w-60">
                 <div 
-                  className="h-full bg-primary transition-all duration-300"
+                  className="h-full bg-primary transition-all duration-300 bg-red-500"
                   style={{ width: `${((currentSentenceIndex + 1) / sentenceData.length) * 100}%` }}
                 />
               </div>
@@ -642,11 +662,11 @@ export function ArticleView({ pages }: ArticleViewProps) {
           )}
         </CardHeader>
 
-        <CardContent className="flex-1 pt-8 prose prose-slate dark:prose-invert max-w-none">
+        <CardContent className="flex-1 prose prose-slate dark:prose-invert max-w-none">
           {HighlightedContent}
         </CardContent>
 
-        <CardFooter className="border-t pt-6 flex items-center justify-between">
+        <CardFooter className="border-t flex items-center justify-between">
           <Button
             variant="outline"
             size="sm"
