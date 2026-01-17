@@ -11,7 +11,6 @@ import {
   Volume2, 
   VolumeX, 
   Highlighter,
-  HighlighterIcon,
   Square
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -508,7 +507,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
             <div className="flex items-center gap-2">
               {/* Slideshow Controls */}
               <TooltipProvider>
-                <div className="flex items-center gap-1 mr-4 bg-secondary rounded-full p-1">
+                <div className="flex items-center gap-1 mr-2 bg-secondary rounded-full p-1 px-2">
                   
                   {isSlideshowActive && (
                     <Tooltip>
@@ -606,9 +605,9 @@ export function ArticleView({ pages }: ArticleViewProps) {
                             pressed={enableHighlight}
                             onPressedChange={setEnableHighlight}
                             size="sm"
-                            className="h-8 w-8 rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                            className={`h-6 w-6 rounded-full ${enableHighlight ? "bg-yellow-500 hover:bg-yellow-500" : ""}`}
                           >
-                            <Highlighter className="size-4" />
+                            <Highlighter className="size-4 text-accent-foreground" />
                           </Toggle>
                         </TooltipTrigger>
                         <TooltipContent>
