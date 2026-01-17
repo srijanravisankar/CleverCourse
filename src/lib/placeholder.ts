@@ -17,16 +17,32 @@ export const MOCK_COURSE_SECTION = {
     ]
   },
   studyMaterial: {
-    mindMap: [
-      "React Hooks",
-      "useState",
-      "useEffect",
-      "Component Lifecycle",
-      "Functional Components",
-      "State Management",
-      "Side Effects",
-      "Rules of Hooks"
-    ],
+  mindMap: {
+    label: "React Hooks",
+    children: [
+      {
+        label: "State Management",
+        children: [
+          { label: "useState" },
+          { label: "Functional State" }
+        ]
+      },
+      {
+        label: "Side Effects",
+        children: [
+          { label: "useEffect" },
+          { label: "Lifecycle Events" }
+        ]
+      },
+      {
+        label: "Rules of Hooks",
+        children: [
+          { label: "Top-level only" },
+          { label: "React Functions only" }
+        ]
+      }
+    ]
+  },
     flashcards: [
       { front: "What hook handles side effects?", back: "useEffect" },
       { front: "Can you use hooks in class components?", back: "No, hooks are for functional components only." },

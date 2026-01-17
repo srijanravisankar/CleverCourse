@@ -20,6 +20,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { MindMap } from "@/components/studyMaterial/MindMap"
 
 export default function CoursePage() {
   const { activeView } = useCourseStore()
@@ -64,6 +65,12 @@ export default function CoursePage() {
           {activeView === "flashcards" && (
             <div className="max-w-xl mx-auto py-10">
               <Flashcards cards={MOCK_COURSE_SECTION.studyMaterial.flashcards} />
+            </div>
+          )}
+
+          {activeView === "mindmap" && (
+            <div className="max-w-5xl mx-auto overflow-hidden">
+              <MindMap data={MOCK_COURSE_SECTION.studyMaterial.mindMap} />
             </div>
           )}
 

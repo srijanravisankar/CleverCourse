@@ -7,7 +7,12 @@ import {
   Brain, 
   Gamepad2, 
   Plus,
-  Command
+  Command,
+  Layers,
+  BriefcaseBusiness,
+  ListChecks,
+  ToggleLeft,
+  Type,
 } from "lucide-react"
 
 import {
@@ -99,8 +104,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarGroupLabel>Curriculum</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {COURSE_DATA.sections.map((section) => (
-                  <CourseSectionItem key={section.id} section={section} />
+                {COURSE_DATA.sections.map((section, index) => (
+                  <CourseSectionItem key={section.id} section={section} index={index} />
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -115,56 +120,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
  * MODULAR COMPONENT: CourseSectionItem
  * Handles the collapsible dropdown logic for each section.
  */
-// function CourseSectionItem({ section }: { section: typeof COURSE_DATA.sections[0] }) {
-//   const setActiveView = useCourseStore((state) => state.setActiveView)
-
-//   const handleNav = (view: ViewType) => {
-//     setActiveView(view)
-//   }
-
-//   return (
-//     <Collapsible defaultOpen className="group/collapsible">
-//       <SidebarMenuItem>
-//         <CollapsibleTrigger asChild>
-//           <SidebarMenuButton tooltip={section.title} className="font-medium text-sidebar-foreground/80">
-//             <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-//             <span className="truncate">{section.title}</span>
-//           </SidebarMenuButton>
-//         </CollapsibleTrigger>
-        
-//         <CollapsibleContent>
-//           <SidebarMenuSub>
-//             {/* Article Link */}
-//             <SidebarMenuSubItem>
-//               <SidebarMenuSubButton onClick={() => handleNav("article")}>
-//                 <BookOpen className="size-4 text-blue-500" />
-//                 <span>Article</span>
-//               </SidebarMenuSubButton>
-//             </SidebarMenuSubItem>
-
-//             {/* Flashcards Link */}
-//             <SidebarMenuSubItem>
-//               <SidebarMenuSubButton onClick={() => handleNav("flashcards")}>
-//                 <Brain className="size-4 text-purple-500" />
-//                 <span>Flashcards</span>
-//               </SidebarMenuSubButton>
-//             </SidebarMenuSubItem>
-
-//             {/* Quiz Link */}
-//             <SidebarMenuSubItem>
-//               <SidebarMenuSubButton onClick={() => handleNav("quiz")}>
-//                 <Gamepad2 className="size-4 text-orange-500" />
-//                 <span>Quiz</span>
-//               </SidebarMenuSubButton>
-//             </SidebarMenuSubItem>
-//           </SidebarMenuSub>
-//         </CollapsibleContent>
-//       </SidebarMenuItem>
-//     </Collapsible>
-//   )
-// }
-
-function CourseSectionItem({ section }: { section: typeof COURSE_DATA.sections[0] }) {
+function CourseSectionItem({ section, index }: { section: typeof COURSE_DATA.sections[0], index: number }) {
   const setActiveView = useCourseStore((state) => state.setActiveView)
 
   return (
@@ -172,8 +128,11 @@ function CourseSectionItem({ section }: { section: typeof COURSE_DATA.sections[0
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton tooltip={section.title} className="font-semibold text-sidebar-foreground">
-            <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+            <div className="flex size-5 items-center bg-black text-accent justify-center rounded-full text-[10px] font-bold group-hover/collapsible:bg-primary group-hover/collapsible:text-primary-foreground transition-colors">
+              {index + 1}
+            </div>
             <span className="truncate">{section.title}</span>
+            <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
         
@@ -182,7 +141,7 @@ function CourseSectionItem({ section }: { section: typeof COURSE_DATA.sections[0
             {/* 1. Article (Direct Link) */}
             <SidebarMenuSubItem>
               <SidebarMenuSubButton onClick={() => setActiveView("article")}>
-                <BookOpen className="size-4 text-blue-500" />
+                <BookOpen className="size-4 !text-green-600" />
                 <span>Article</span>
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>
@@ -193,7 +152,7 @@ function CourseSectionItem({ section }: { section: typeof COURSE_DATA.sections[0
                 <CollapsibleTrigger asChild>
                   <SidebarMenuSubButton className="w-full justify-between">
                     <div className="flex items-center gap-2">
-                      <Brain className="size-4 text-purple-500" />
+                      <BriefcaseBusiness className="size-4 text-blue-600" />
                       <span>Study Material</span>
                     </div>
                     <ChevronRight className="size-3 transition-transform group-data-[state=open]/study:rotate-90" />
@@ -203,11 +162,13 @@ function CourseSectionItem({ section }: { section: typeof COURSE_DATA.sections[0
                   <SidebarMenuSub className="ml-4 border-l">
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton onClick={() => setActiveView("mindmap")}>
+                        <Brain className="size-4 !text-pink-600" />
                         <span>Mind Map</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton onClick={() => setActiveView("flashcards")}>
+                        <Layers className="size-4 !text-yellow-600" />
                         <span>Flashcards</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -222,7 +183,7 @@ function CourseSectionItem({ section }: { section: typeof COURSE_DATA.sections[0
                 <CollapsibleTrigger asChild>
                   <SidebarMenuSubButton className="w-full justify-between">
                     <div className="flex items-center gap-2">
-                      <Gamepad2 className="size-4 text-orange-500" />
+                      <Gamepad2 className="size-4 text-red-600" />
                       <span>Quiz</span>
                     </div>
                     <ChevronRight className="size-3 transition-transform group-data-[state=open]/quiz:rotate-90" />
@@ -232,16 +193,19 @@ function CourseSectionItem({ section }: { section: typeof COURSE_DATA.sections[0
                   <SidebarMenuSub className="ml-4 border-l">
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton onClick={() => setActiveView("quiz")}>
+                        <ListChecks className="size-4 !text-purple-600" />
                         <span>Multiple Choice</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton onClick={() => setActiveView("quiz")}>
+                        <ToggleLeft className="size-4 !text-amber-900" />
                         <span>True / False</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton onClick={() => setActiveView("quiz")}>
+                        <Type className="size-4 !text-stone-600" />
                         <span>Fill Ups</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
