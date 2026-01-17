@@ -2,7 +2,7 @@
 
 /**
  * Progress Server Actions
- * 
+ *
  * These server actions provide the interface between the frontend
  * and the database for user progress tracking.
  */
@@ -21,13 +21,13 @@ const PLACEHOLDER_USER_ID = "anonymous";
  * Get or create progress for a course
  */
 export async function getCourseProgress(
-  courseId: string
+  courseId: string,
 ): Promise<UserProgress | null> {
   const progress = await progressRepository.findByUserAndCourse(
     PLACEHOLDER_USER_ID,
-    courseId
+    courseId,
   );
-  
+
   if (!progress) {
     // Create initial progress record
     return progressRepository.create({
@@ -35,7 +35,7 @@ export async function getCourseProgress(
       courseId,
     });
   }
-  
+
   return progress;
 }
 
@@ -50,11 +50,11 @@ export async function getAllProgress(): Promise<UserProgress[]> {
  * Increment articles read count
  */
 export async function incrementArticlesRead(
-  courseId: string
+  courseId: string,
 ): Promise<UserProgress> {
   return progressRepository.incrementArticlesRead(
     PLACEHOLDER_USER_ID,
-    courseId
+    courseId,
   );
 }
 
@@ -62,11 +62,11 @@ export async function incrementArticlesRead(
  * Increment flashcards reviewed count
  */
 export async function incrementFlashcardsReviewed(
-  courseId: string
+  courseId: string,
 ): Promise<UserProgress> {
   return progressRepository.incrementFlashcardsReviewed(
     PLACEHOLDER_USER_ID,
-    courseId
+    courseId,
   );
 }
 
@@ -75,12 +75,12 @@ export async function incrementFlashcardsReviewed(
  */
 export async function addTimeSpent(
   courseId: string,
-  seconds: number
+  seconds: number,
 ): Promise<UserProgress> {
   return progressRepository.addTimeSpent(
     PLACEHOLDER_USER_ID,
     courseId,
-    seconds
+    seconds,
   );
 }
 
@@ -89,18 +89,18 @@ export async function addTimeSpent(
  */
 export async function updateQuizScore(
   courseId: string,
-  score: number
+  score: number,
 ): Promise<UserProgress> {
   const existing = await progressRepository.findByUserAndCourse(
     PLACEHOLDER_USER_ID,
-    courseId
+    courseId,
   );
-  
+
   const currentQuizzes = existing?.quizzesTaken ?? 0;
   const currentScore = existing?.quizScore ?? 0;
-  
+
   // Calculate new average score
-  const newAverage = 
+  const newAverage =
     (currentScore * currentQuizzes + score) / (currentQuizzes + 1);
 
   return progressRepository.upsert(PLACEHOLDER_USER_ID, courseId, {
@@ -112,7 +112,9 @@ export async function updateQuizScore(
 /**
  * Update last accessed time
  */
-export async function updateLastAccessed(courseId: string): Promise<UserProgress> {
+export async function updateLastAccessed(
+  courseId: string,
+): Promise<UserProgress> {
   return progressRepository.upsert(PLACEHOLDER_USER_ID, courseId, {
     lastAccessedAt: new Date(),
   });

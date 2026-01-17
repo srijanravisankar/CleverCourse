@@ -57,7 +57,12 @@ export type NewUserProgress = InferInsertModel<typeof userProgress>;
 
 export type CourseLevel = "beginner" | "intermediate" | "advanced" | "expert";
 export type CourseTone = "professional" | "casual" | "technical";
-export type CourseStatus = "draft" | "generating" | "active" | "completed" | "archived";
+export type CourseStatus =
+  | "draft"
+  | "generating"
+  | "active"
+  | "completed"
+  | "archived";
 export type ChatRole = "user" | "assistant";
 
 // ============================================================================

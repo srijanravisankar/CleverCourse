@@ -1,8 +1,8 @@
 /**
  * Server Actions Index
- * 
+ *
  * Re-exports all server actions for easy importing.
- * 
+ *
  * Usage:
  * import { createCourse, getAllCourses } from "@/app/actions";
  */

@@ -2,15 +2,12 @@
 
 /**
  * Chat Server Actions
- * 
+ *
  * These server actions provide the interface between the frontend
  * and the database for chat-related operations.
  */
 
-import {
-  conversationRepository,
-  messageRepository,
-} from "@/db/repositories";
+import { conversationRepository, messageRepository } from "@/db/repositories";
 import type {
   ChatConversation,
   ChatMessage,
@@ -26,7 +23,7 @@ import type {
  */
 export async function createConversation(
   courseId?: string,
-  title?: string
+  title?: string,
 ): Promise<ChatConversation> {
   return conversationRepository.create({
     courseId: courseId ?? null,
@@ -39,7 +36,7 @@ export async function createConversation(
  * Get a conversation by ID with all messages
  */
 export async function getConversationWithMessages(
-  id: string
+  id: string,
 ): Promise<ConversationWithMessages | null> {
   const conversation = await conversationRepository.findByIdWithMessages(id);
   return conversation ?? null;
@@ -49,7 +46,7 @@ export async function getConversationWithMessages(
  * Get all conversations for a course
  */
 export async function getCourseConversations(
-  courseId: string
+  courseId: string,
 ): Promise<ChatConversation[]> {
   return conversationRepository.findByCourseId(courseId);
 }
@@ -58,7 +55,7 @@ export async function getCourseConversations(
  * Get the latest conversation (or create a new one if none exists)
  */
 export async function getOrCreateConversation(
-  courseId?: string
+  courseId?: string,
 ): Promise<ChatConversation> {
   // For now, we'll just create a new conversation
   // When auth is implemented, we can look up by user
@@ -70,7 +67,7 @@ export async function getOrCreateConversation(
  */
 export async function updateConversationTitle(
   id: string,
-  title: string
+  title: string,
 ): Promise<ChatConversation | null> {
   const conversation = await conversationRepository.update(id, { title });
   return conversation ?? null;
@@ -94,7 +91,7 @@ export async function addMessage(
   conversationId: string,
   role: "user" | "assistant",
   content: string,
-  context?: string
+  context?: string,
 ): Promise<ChatMessage> {
   return messageRepository.create({
     conversationId,
@@ -108,7 +105,7 @@ export async function addMessage(
  * Get all messages for a conversation
  */
 export async function getConversationMessages(
-  conversationId: string
+  conversationId: string,
 ): Promise<ChatMessage[]> {
   return messageRepository.findByConversationId(conversationId);
 }
@@ -124,7 +121,7 @@ export async function deleteMessage(id: string): Promise<void> {
  * Clear all messages from a conversation
  */
 export async function clearConversationMessages(
-  conversationId: string
+  conversationId: string,
 ): Promise<void> {
   await messageRepository.deleteByConversationId(conversationId);
 }
@@ -140,11 +137,11 @@ export async function clearConversationMessages(
 export async function sendUserMessage(
   conversationId: string,
   content: string,
-  context?: string
+  context?: string,
 ): Promise<{ message: ChatMessage; conversation: ConversationWithMessages }> {
   const message = await addMessage(conversationId, "user", content, context);
   const conversation = await getConversationWithMessages(conversationId);
-  
+
   if (!conversation) {
     throw new Error("Conversation not found");
   }
@@ -157,11 +154,11 @@ export async function sendUserMessage(
  */
 export async function addAssistantMessage(
   conversationId: string,
-  content: string
+  content: string,
 ): Promise<{ message: ChatMessage; conversation: ConversationWithMessages }> {
   const message = await addMessage(conversationId, "assistant", content);
   const conversation = await getConversationWithMessages(conversationId);
-  
+
   if (!conversation) {
     throw new Error("Conversation not found");
   }

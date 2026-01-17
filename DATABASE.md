@@ -5,6 +5,7 @@ This document describes the SQLite persistence layer for the CleverCourse applic
 ## Overview
 
 The database layer provides:
+
 - **SQLite** storage via `better-sqlite3`
 - **Drizzle ORM** for type-safe queries
 - **Server Actions** for Next.js integration
@@ -35,21 +36,21 @@ data/
 
 ### Core Entities
 
-| Table | Description |
-|-------|-------------|
-| `users` | User accounts |
-| `courses` | Learning courses |
-| `course_sections` | Sections within a course |
-| `article_pages` | Article content pages |
-| `flashcards` | Flashcard study material |
-| `mind_maps` | Mind map visualizations |
-| `mcq_questions` | Multiple choice questions |
-| `true_false_questions` | True/False questions |
-| `fill_up_questions` | Fill-in-the-blank questions |
-| `chat_conversations` | Chat sessions |
-| `chat_messages` | Individual chat messages |
-| `uploaded_files` | Course material uploads |
-| `user_progress` | Learning progress tracking |
+| Table                  | Description                 |
+| ---------------------- | --------------------------- |
+| `users`                | User accounts               |
+| `courses`              | Learning courses            |
+| `course_sections`      | Sections within a course    |
+| `article_pages`        | Article content pages       |
+| `flashcards`           | Flashcard study material    |
+| `mind_maps`            | Mind map visualizations     |
+| `mcq_questions`        | Multiple choice questions   |
+| `true_false_questions` | True/False questions        |
+| `fill_up_questions`    | Fill-in-the-blank questions |
+| `chat_conversations`   | Chat sessions               |
+| `chat_messages`        | Individual chat messages    |
+| `uploaded_files`       | Course material uploads     |
+| `user_progress`        | Learning progress tracking  |
 
 ### Entity Relationships
 
@@ -97,10 +98,10 @@ pnpm db:reset
 
 ```typescript
 // In a Server Component or Server Action
-import { 
-  getAllCourses, 
+import {
+  getAllCourses,
   getCourseWithSections,
-  createCourse 
+  createCourse,
 } from "@/app/actions";
 
 // Get all courses
@@ -124,10 +125,10 @@ const newCourse = await createCourse({
 
 ```typescript
 // For advanced use cases
-import { 
+import {
   courseRepository,
   sectionRepository,
-  flashcardRepository 
+  flashcardRepository,
 } from "@/db/repositories";
 
 // Get full course with all content
@@ -147,11 +148,11 @@ await flashcardRepository.updateReview(flashcardId, true);
 ### Type-Safe Queries
 
 ```typescript
-import type { 
-  Course, 
-  CourseSection, 
+import type {
+  Course,
+  CourseSection,
   FullCourse,
-  CreateCourseInput 
+  CreateCourseInput,
 } from "@/db/types";
 
 // All types are inferred from the schema
@@ -219,11 +220,11 @@ const fullConv = await getConversationWithMessages(conv.id);
 
 ```typescript
 import {
-  parseMindMap,      // Parse JSON mind map data
-  parseMcqQuestion,  // Parse JSON MCQ options
-  formatTimeSpent,   // "5h 30m"
-  calculateQuizScore,// { score: 80, attempted: 4, total: 5 }
-  shuffleArray,      // Randomize quiz options
+  parseMindMap, // Parse JSON mind map data
+  parseMcqQuestion, // Parse JSON MCQ options
+  formatTimeSpent, // "5h 30m"
+  calculateQuizScore, // { score: 80, attempted: 4, total: 5 }
+  shuffleArray, // Randomize quiz options
 } from "@/db/utils";
 ```
 
@@ -232,6 +233,7 @@ import {
 ### Adding a New Table
 
 1. Define the table in `schema.ts`:
+
 ```typescript
 export const newTable = sqliteTable("new_table", {
   id: text("id").primaryKey(),
@@ -240,6 +242,7 @@ export const newTable = sqliteTable("new_table", {
 ```
 
 2. Add relations if needed:
+
 ```typescript
 export const newTableRelations = relations(newTable, ({ one, many }) => ({
   // ... relations
@@ -247,21 +250,28 @@ export const newTableRelations = relations(newTable, ({ one, many }) => ({
 ```
 
 3. Export types in `types.ts`:
+
 ```typescript
 export type NewRecord = InferSelectModel<typeof newTable>;
 export type InsertNewRecord = InferInsertModel<typeof newTable>;
 ```
 
 4. Add repository in `repositories.ts`:
+
 ```typescript
 export const newRepository = {
-  async create(data) { /* ... */ },
-  async findById(id) { /* ... */ },
+  async create(data) {
+    /* ... */
+  },
+  async findById(id) {
+    /* ... */
+  },
   // ...
 };
 ```
 
 5. Push schema changes:
+
 ```bash
 pnpm db:push
 ```

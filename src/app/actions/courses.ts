@@ -2,7 +2,7 @@
 
 /**
  * Course Server Actions
- * 
+ *
  * These server actions provide the interface between the frontend
  * and the database for course-related operations.
  */
@@ -73,7 +73,7 @@ export async function getCourseById(id: string): Promise<Course | null> {
  * Get a course with all its sections
  */
 export async function getCourseWithSections(
-  id: string
+  id: string,
 ): Promise<CourseWithSections | null> {
   const course = await courseRepository.findByIdWithSections(id);
   return course ?? null;
@@ -92,7 +92,7 @@ export async function getFullCourse(id: string): Promise<FullCourse | null> {
  */
 export async function updateCourseStatus(
   id: string,
-  status: Course["status"]
+  status: Course["status"],
 ): Promise<Course | null> {
   const course = await courseRepository.updateStatus(id, status);
   return course ?? null;
@@ -103,7 +103,7 @@ export async function updateCourseStatus(
  */
 export async function updateCourseDetails(
   id: string,
-  data: { title?: string; description?: string }
+  data: { title?: string; description?: string },
 ): Promise<Course | null> {
   const course = await courseRepository.update(id, data);
   return course ?? null;
@@ -121,7 +121,7 @@ export async function deleteCourse(id: string): Promise<void> {
  */
 export async function setCurrentSection(
   courseId: string,
-  sectionIndex: number
+  sectionIndex: number,
 ): Promise<Course | null> {
   const course = await courseRepository.update(courseId, {
     currentSectionIndex: sectionIndex,
@@ -137,7 +137,7 @@ export async function setCurrentSection(
  * Get sections for a course
  */
 export async function getCourseSections(
-  courseId: string
+  courseId: string,
 ): Promise<CourseSection[]> {
   return sectionRepository.findByCourseId(courseId);
 }
@@ -146,7 +146,7 @@ export async function getCourseSections(
  * Get a section by ID with all its content
  */
 export async function getSectionWithContent(
-  sectionId: string
+  sectionId: string,
 ): Promise<CourseSectionWithContent | null> {
   const section = await sectionRepository.findByIdWithContent(sectionId);
   return section ?? null;
@@ -156,15 +156,15 @@ export async function getSectionWithContent(
  * Mark a section as complete
  */
 export async function markSectionComplete(
-  sectionId: string
+  sectionId: string,
 ): Promise<CourseSection | null> {
   const section = await sectionRepository.markComplete(sectionId);
-  
+
   if (section) {
     // Also increment the completed sections count on the course
     await courseRepository.incrementCompletedSections(section.courseId);
   }
-  
+
   return section ?? null;
 }
 
@@ -174,7 +174,7 @@ export async function markSectionComplete(
 export async function createSectionWithContent(
   courseId: string,
   sectionNumber: number,
-  content: GeneratedSectionContent
+  content: GeneratedSectionContent,
 ): Promise<CourseSection> {
   // Create the section
   const section = await sectionRepository.create({
@@ -267,10 +267,7 @@ export async function getSectionFlashcards(sectionId: string) {
 /**
  * Update flashcard after review (spaced repetition)
  */
-export async function reviewFlashcard(
-  flashcardId: string,
-  isCorrect: boolean
-) {
+export async function reviewFlashcard(flashcardId: string, isCorrect: boolean) {
   return flashcardRepository.updateReview(flashcardId, isCorrect);
 }
 
@@ -314,7 +311,7 @@ export async function submitMcqAnswer(questionId: string, answer: string) {
  */
 export async function submitTrueFalseAnswer(
   questionId: string,
-  answer: boolean
+  answer: boolean,
 ) {
   return trueFalseRepository.submitAnswer(questionId, answer);
 }

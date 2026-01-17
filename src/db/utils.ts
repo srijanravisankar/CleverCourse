@@ -1,6 +1,6 @@
 /**
  * Database Utilities
- * 
+ *
  * Helper functions for working with the database.
  */
 
@@ -84,19 +84,19 @@ export function formatTimeSpent(seconds: number): string {
   if (seconds < 60) {
     return `${seconds}s`;
   }
-  
+
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) {
     return `${minutes}m`;
   }
-  
+
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
-  
+
   if (remainingMinutes === 0) {
     return `${hours}h`;
   }
-  
+
   return `${hours}h ${remainingMinutes}m`;
 }
 
@@ -107,10 +107,7 @@ export function formatTimeSpent(seconds: number): string {
 /**
  * Calculate completion percentage
  */
-export function calculateCompletion(
-  completed: number,
-  total: number
-): number {
+export function calculateCompletion(completed: number, total: number): number {
   if (total === 0) return 0;
   return Math.round((completed / total) * 100);
 }
@@ -133,7 +130,7 @@ export function getProgressColor(percentage: number): string {
  * Calculate quiz score from attempted questions
  */
 export function calculateQuizScore(
-  questions: Array<{ isAttempted: boolean; isCorrect: boolean | null }>
+  questions: Array<{ isAttempted: boolean; isCorrect: boolean | null }>,
 ): { score: number; attempted: number; total: number } {
   const attempted = questions.filter((q) => q.isAttempted).length;
   const correct = questions.filter((q) => q.isCorrect === true).length;

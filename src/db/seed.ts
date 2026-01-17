@@ -1,6 +1,6 @@
 /**
  * Database Seed Script
- * 
+ *
  * This script populates the database with sample data for testing and development.
  * Run with: npx tsx src/db/seed.ts
  */
@@ -40,7 +40,8 @@ async function seed() {
   const course = await courseRepository.create({
     userId: user.id,
     title: "Introduction to Machine Learning",
-    description: "A comprehensive beginner's guide to understanding the fundamentals of Machine Learning, including supervised learning, neural networks, and practical applications.",
+    description:
+      "A comprehensive beginner's guide to understanding the fundamentals of Machine Learning, including supervised learning, neural networks, and practical applications.",
     topic: "Machine Learning",
     level: "beginner",
     goal: "Understand the core concepts of ML and be able to build simple models",
@@ -172,14 +173,20 @@ Select an appropriate algorithm based on:
           back: "A type of ML where the algorithm learns from labeled training data to make predictions on new, unseen data.",
         },
         {
-          front: "What percentage of an ML project is typically spent on data preparation?",
+          front:
+            "What percentage of an ML project is typically spent on data preparation?",
           back: "60-80% of a project's time is spent on data collection and preparation.",
         },
       ],
       mcqs: [
         {
           question: "Which of the following is NOT a type of Machine Learning?",
-          options: ["Supervised Learning", "Unsupervised Learning", "Procedural Learning", "Reinforcement Learning"],
+          options: [
+            "Supervised Learning",
+            "Unsupervised Learning",
+            "Procedural Learning",
+            "Reinforcement Learning",
+          ],
           answer: "Procedural Learning",
         },
         {
@@ -195,14 +202,18 @@ Select an appropriate algorithm based on:
       ],
       trueFalse: [
         {
-          question: "Machine Learning requires explicitly programming all rules.",
+          question:
+            "Machine Learning requires explicitly programming all rules.",
           answer: false,
-          explanation: "Machine Learning allows systems to learn patterns from data without explicit programming of rules.",
+          explanation:
+            "Machine Learning allows systems to learn patterns from data without explicit programming of rules.",
         },
         {
-          question: "Data preparation typically takes the majority of time in an ML project.",
+          question:
+            "Data preparation typically takes the majority of time in an ML project.",
           answer: true,
-          explanation: "Data collection and preparation often takes 60-80% of a project's time.",
+          explanation:
+            "Data collection and preparation often takes 60-80% of a project's time.",
         },
       ],
       fillUps: [
@@ -211,7 +222,8 @@ Select an appropriate algorithm based on:
           missingWord: "artificial",
         },
         {
-          sentence: "In _______ learning, the algorithm learns from labeled training data.",
+          sentence:
+            "In _______ learning, the algorithm learns from labeled training data.",
           missingWord: "supervised",
         },
       ],
@@ -265,17 +277,11 @@ Predicting a **continuous value**:
         children: [
           {
             label: "Classification",
-            children: [
-              { label: "Binary" },
-              { label: "Multi-class" },
-            ],
+            children: [{ label: "Binary" }, { label: "Multi-class" }],
           },
           {
             label: "Regression",
-            children: [
-              { label: "Linear" },
-              { label: "Polynomial" },
-            ],
+            children: [{ label: "Linear" }, { label: "Polynomial" }],
           },
           {
             label: "Algorithms",
@@ -289,7 +295,8 @@ Predicting a **continuous value**:
       },
       flashcards: [
         {
-          front: "What is the difference between classification and regression?",
+          front:
+            "What is the difference between classification and regression?",
           back: "Classification predicts categories/classes, while regression predicts continuous numerical values.",
         },
         {
@@ -300,15 +307,22 @@ Predicting a **continuous value**:
       mcqs: [
         {
           question: "Which type of problem is 'predicting house prices'?",
-          options: ["Classification", "Regression", "Clustering", "Reinforcement"],
+          options: [
+            "Classification",
+            "Regression",
+            "Clustering",
+            "Reinforcement",
+          ],
           answer: "Regression",
         },
       ],
       trueFalse: [
         {
-          question: "Logistic Regression is used for regression problems despite its name.",
+          question:
+            "Logistic Regression is used for regression problems despite its name.",
           answer: false,
-          explanation: "Despite its name, Logistic Regression is actually used for classification problems, not regression.",
+          explanation:
+            "Despite its name, Logistic Regression is actually used for classification problems, not regression.",
         },
       ],
       fillUps: [
@@ -400,10 +414,7 @@ print(f'Accuracy: {accuracy:.2f}')
           },
           {
             label: "Training",
-            children: [
-              { label: "Choose Model" },
-              { label: "Fit Model" },
-            ],
+            children: [{ label: "Choose Model" }, { label: "Fit Model" }],
           },
           {
             label: "Evaluation",
@@ -434,14 +445,17 @@ print(f'Accuracy: {accuracy:.2f}')
       ],
       trueFalse: [
         {
-          question: "You should always train on 100% of your data for best results.",
+          question:
+            "You should always train on 100% of your data for best results.",
           answer: false,
-          explanation: "You should always hold out some data for testing to evaluate how well your model generalizes to unseen data.",
+          explanation:
+            "You should always hold out some data for testing to evaluate how well your model generalizes to unseen data.",
         },
       ],
       fillUps: [
         {
-          sentence: "The process of a model learning too much from training data is called _______.",
+          sentence:
+            "The process of a model learning too much from training data is called _______.",
           missingWord: "overfitting",
         },
       ],
@@ -450,8 +464,10 @@ print(f'Accuracy: {accuracy:.2f}')
 
   // Create sections and content
   for (const sectionData of sectionsData) {
-    console.log(`Creating section ${sectionData.sectionNumber}: ${sectionData.title}...`);
-    
+    console.log(
+      `Creating section ${sectionData.sectionNumber}: ${sectionData.title}...`,
+    );
+
     const section = await sectionRepository.create({
       courseId: course.id,
       sectionNumber: sectionData.sectionNumber,
@@ -519,7 +535,9 @@ print(f'Accuracy: {accuracy:.2f}')
   console.log(`   - 1 User`);
   console.log(`   - 1 Course`);
   console.log(`   - ${sectionsData.length} Sections`);
-  console.log(`   - Article pages, flashcards, quizzes, and mind maps for each section`);
+  console.log(
+    `   - Article pages, flashcards, quizzes, and mind maps for each section`,
+  );
 }
 
 // Run the seed function

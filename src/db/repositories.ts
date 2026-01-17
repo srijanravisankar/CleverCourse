@@ -119,7 +119,9 @@ export const courseRepository = {
     });
   },
 
-  async findByIdWithSections(id: string): Promise<CourseWithSections | undefined> {
+  async findByIdWithSections(
+    id: string,
+  ): Promise<CourseWithSections | undefined> {
     const course = await db.query.courses.findFirst({
       where: eq(courses.id, id),
       with: {
@@ -167,7 +169,10 @@ export const courseRepository = {
     });
   },
 
-  async update(id: string, data: Partial<NewCourse>): Promise<Course | undefined> {
+  async update(
+    id: string,
+    data: Partial<NewCourse>,
+  ): Promise<Course | undefined> {
     const [course] = await db
       .update(courses)
       .set({ ...data, updatedAt: new Date() })
@@ -176,14 +181,17 @@ export const courseRepository = {
     return course;
   },
 
-  async updateStatus(id: string, status: Course["status"]): Promise<Course | undefined> {
+  async updateStatus(
+    id: string,
+    status: Course["status"],
+  ): Promise<Course | undefined> {
     return this.update(id, { status });
   },
 
   async incrementCompletedSections(id: string): Promise<Course | undefined> {
     const course = await this.findById(id);
     if (!course) return undefined;
-    
+
     return this.update(id, {
       completedSections: course.completedSections + 1,
       isComplete: course.completedSections + 1 >= course.sectionCount,
@@ -215,7 +223,9 @@ export const sectionRepository = {
     });
   },
 
-  async findByIdWithContent(id: string): Promise<CourseSectionWithContent | undefined> {
+  async findByIdWithContent(
+    id: string,
+  ): Promise<CourseSectionWithContent | undefined> {
     const section = await db.query.courseSections.findFirst({
       where: eq(courseSections.id, id),
       with: {
@@ -239,7 +249,10 @@ export const sectionRepository = {
     });
   },
 
-  async update(id: string, data: Partial<NewCourseSection>): Promise<CourseSection | undefined> {
+  async update(
+    id: string,
+    data: Partial<NewCourseSection>,
+  ): Promise<CourseSection | undefined> {
     const [section] = await db
       .update(courseSections)
       .set({ ...data, updatedAt: new Date() })
@@ -345,7 +358,7 @@ export const flashcardRepository = {
 
   async updateReview(
     id: string,
-    isCorrect: boolean
+    isCorrect: boolean,
   ): Promise<Flashcard | undefined> {
     const card = await this.findById(id);
     if (!card) return undefined;
@@ -454,7 +467,7 @@ export const mcqRepository = {
 
   async submitAnswer(
     id: string,
-    userAnswer: string
+    userAnswer: string,
   ): Promise<McqQuestion | undefined> {
     const mcq = await this.findById(id);
     if (!mcq) return undefined;
@@ -496,7 +509,9 @@ export const mcqRepository = {
 // ============================================================================
 
 export const trueFalseRepository = {
-  async create(data: Omit<NewTrueFalseQuestion, "id">): Promise<TrueFalseQuestion> {
+  async create(
+    data: Omit<NewTrueFalseQuestion, "id">,
+  ): Promise<TrueFalseQuestion> {
     const id = generateId();
     const [tf] = await db
       .insert(trueFalseQuestions)
@@ -506,7 +521,7 @@ export const trueFalseRepository = {
   },
 
   async createMany(
-    data: Omit<NewTrueFalseQuestion, "id">[]
+    data: Omit<NewTrueFalseQuestion, "id">[],
   ): Promise<TrueFalseQuestion[]> {
     const tfsWithIds = data.map((tf) => ({
       ...tf,
@@ -529,7 +544,7 @@ export const trueFalseRepository = {
 
   async submitAnswer(
     id: string,
-    userAnswer: boolean
+    userAnswer: boolean,
   ): Promise<TrueFalseQuestion | undefined> {
     const tf = await this.findById(id);
     if (!tf) return undefined;
@@ -581,7 +596,7 @@ export const fillUpRepository = {
   },
 
   async createMany(
-    data: Omit<NewFillUpQuestion, "id">[]
+    data: Omit<NewFillUpQuestion, "id">[],
   ): Promise<FillUpQuestion[]> {
     const fillUpsWithIds = data.map((fillUp) => ({
       ...fillUp,
@@ -604,7 +619,7 @@ export const fillUpRepository = {
 
   async submitAnswer(
     id: string,
-    userAnswer: string
+    userAnswer: string,
   ): Promise<FillUpQuestion | undefined> {
     const fillUp = await this.findById(id);
     if (!fillUp) return undefined;
@@ -650,7 +665,9 @@ export const fillUpRepository = {
 // ============================================================================
 
 export const conversationRepository = {
-  async create(data: Omit<NewChatConversation, "id">): Promise<ChatConversation> {
+  async create(
+    data: Omit<NewChatConversation, "id">,
+  ): Promise<ChatConversation> {
     const id = generateId();
     const [conversation] = await db
       .insert(chatConversations)
@@ -665,7 +682,9 @@ export const conversationRepository = {
     });
   },
 
-  async findByIdWithMessages(id: string): Promise<ConversationWithMessages | undefined> {
+  async findByIdWithMessages(
+    id: string,
+  ): Promise<ConversationWithMessages | undefined> {
     const conversation = await db.query.chatConversations.findFirst({
       where: eq(chatConversations.id, id),
       with: {
@@ -691,7 +710,9 @@ export const conversationRepository = {
     });
   },
 
-  async findLatestByUserId(userId: string): Promise<ChatConversation | undefined> {
+  async findLatestByUserId(
+    userId: string,
+  ): Promise<ChatConversation | undefined> {
     return db.query.chatConversations.findFirst({
       where: eq(chatConversations.userId, userId),
       orderBy: [desc(chatConversations.updatedAt)],
@@ -700,7 +721,7 @@ export const conversationRepository = {
 
   async update(
     id: string,
-    data: Partial<NewChatConversation>
+    data: Partial<NewChatConversation>,
   ): Promise<ChatConversation | undefined> {
     const [conversation] = await db
       .update(chatConversations)
@@ -774,7 +795,9 @@ export const fileRepository = {
     return file;
   },
 
-  async createMany(data: Omit<NewUploadedFile, "id">[]): Promise<UploadedFile[]> {
+  async createMany(
+    data: Omit<NewUploadedFile, "id">[],
+  ): Promise<UploadedFile[]> {
     const filesWithIds = data.map((file) => ({
       ...file,
       id: generateId(),
@@ -796,7 +819,7 @@ export const fileRepository = {
 
   async markAsProcessed(
     id: string,
-    extractedText: string
+    extractedText: string,
   ): Promise<UploadedFile | undefined> {
     const [file] = await db
       .update(uploadedFiles)
@@ -833,12 +856,12 @@ export const progressRepository = {
 
   async findByUserAndCourse(
     userId: string,
-    courseId: string
+    courseId: string,
   ): Promise<UserProgress | undefined> {
     return db.query.userProgress.findFirst({
       where: and(
         eq(userProgress.userId, userId),
-        eq(userProgress.courseId, courseId)
+        eq(userProgress.courseId, courseId),
       ),
     });
   },
@@ -853,7 +876,7 @@ export const progressRepository = {
   async upsert(
     userId: string,
     courseId: string,
-    data: Partial<Omit<NewUserProgress, "id" | "userId" | "courseId">>
+    data: Partial<Omit<NewUserProgress, "id" | "userId" | "courseId">>,
   ): Promise<UserProgress> {
     const existing = await this.findByUserAndCourse(userId, courseId);
 
@@ -880,7 +903,7 @@ export const progressRepository = {
 
   async incrementArticlesRead(
     userId: string,
-    courseId: string
+    courseId: string,
   ): Promise<UserProgress> {
     const existing = await this.findByUserAndCourse(userId, courseId);
     const currentCount = existing?.articlesRead ?? 0;
@@ -892,7 +915,7 @@ export const progressRepository = {
 
   async incrementFlashcardsReviewed(
     userId: string,
-    courseId: string
+    courseId: string,
   ): Promise<UserProgress> {
     const existing = await this.findByUserAndCourse(userId, courseId);
     const currentCount = existing?.flashcardsReviewed ?? 0;
@@ -905,7 +928,7 @@ export const progressRepository = {
   async addTimeSpent(
     userId: string,
     courseId: string,
-    seconds: number
+    seconds: number,
   ): Promise<UserProgress> {
     const existing = await this.findByUserAndCourse(userId, courseId);
     const currentTime = existing?.totalTimeSpent ?? 0;
