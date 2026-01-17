@@ -16,6 +16,8 @@ import {
   Network,
   Loader2,
   AlertCircle,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react";
 
 import { CreateCourseDialog } from "@/components/course/CreateCourseDialog";
@@ -25,19 +27,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
-} from "@/components/ui/sidebar";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 import { useCourseStore, ViewType } from "@/store/use-course-store";
 import {
   getAllCourses,
@@ -45,25 +39,39 @@ import {
   getSectionWithContent,
 } from "@/app/actions/courses";
 import type { Course, CourseSection } from "@/db/types";
+import { cn } from "@/lib/utils";
 
-// Color palette for course icons
+// Color palette for course icons (Discord-style colors)
 const COURSE_COLORS = [
-  "bg-blue-500",
-  "bg-green-500",
-  "bg-purple-500",
-  "bg-orange-500",
-  "bg-pink-500",
-  "bg-cyan-500",
-  "bg-yellow-500",
-  "bg-red-500",
+  { bg: "bg-indigo-500", text: "text-white" },
+  { bg: "bg-green-500", text: "text-white" },
+  { bg: "bg-purple-500", text: "text-white" },
+  { bg: "bg-orange-500", text: "text-white" },
+  { bg: "bg-pink-500", text: "text-white" },
+  { bg: "bg-cyan-500", text: "text-white" },
+  { bg: "bg-yellow-500", text: "text-black" },
+  { bg: "bg-red-500", text: "text-white" },
 ];
 
-function getCourseColor(index: number): string {
+function getCourseColor(index: number) {
   return COURSE_COLORS[index % COURSE_COLORS.length];
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+function getCourseInitials(title: string): string {
+  const words = title.split(" ").filter(Boolean);
+  if (words.length === 1) {
+    return words[0].substring(0, 2).toUpperCase();
+  }
+  return words
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+}
+
+export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
   const [showCreateDialog, setShowCreateDialog] = React.useState(false);
+  const [courseSidebarOpen, setCourseSidebarOpen] = React.useState(true);
 
   const {
     courses,
@@ -147,12 +155,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Handle course creation success
   const handleCourseCreated = async (courseId: string) => {
-    // Refresh the courses list to get the new course
     try {
       const fetchedCourses = await getAllCourses();
       setCourses(fetchedCourses);
 
-      // Find and select the newly created course
       const newCourse = fetchedCourses.find((c) => c.id === courseId);
       if (newCourse) {
         await handleSelectCourse(newCourse);
@@ -163,6 +169,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setShowCreateDialog(false);
   };
 
+  const toggleCourseSidebar = () => {
+    setCourseSidebarOpen(!courseSidebarOpen);
+  };
+
   return (
     <>
       <CreateCourseDialog
@@ -171,130 +181,180 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         onCourseCreated={handleCourseCreated}
       />
 
-      <Sidebar
-        collapsible="icon"
-        className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
-        {...props}
-      >
-        {/* FIRST SIDEBAR: Course Icons (Discord Style) */}
-        <Sidebar
-          collapsible="none"
-          className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
-        >
-          <SidebarHeader>
-            <SidebarMenuButton size="lg" className="md:h-8 md:p-0">
-              <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                <Command className="size-4" />
-              </div>
-            </SidebarMenuButton>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarMenu>
-                {isLoadingCourses && courses.length === 0 ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton>
-                      <Loader2 className="size-4 animate-spin" />
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : error && courses.length === 0 ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton tooltip={error}>
-                      <AlertCircle className="size-4 text-destructive" />
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : (
-                  courses.map((course, index) => (
-                    <SidebarMenuItem key={course.id}>
-                      <SidebarMenuButton
-                        tooltip={course.title || course.topic}
-                        isActive={currentCourse?.id === course.id}
-                        onClick={() => handleSelectCourse(course)}
-                      >
-                        <div
-                          className={`size-4 rounded-full ${getCourseColor(
-                            index,
-                          )} ${
-                            currentCourse?.id === course.id
-                              ? "ring-2 ring-primary ring-offset-1"
-                              : ""
-                          }`}
-                        />
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))
-                )}
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    tooltip="Create New Course"
-                    onClick={() => setShowCreateDialog(true)}
-                  >
-                    <Plus className="size-4" />
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
-
-        {/* SECOND SIDEBAR: Course Sections */}
-        <Sidebar collapsible="none" className="hidden flex-1 md:flex">
-          <SidebarHeader className="border-b p-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">
-                Current Course
-              </span>
-              <div className="text-foreground text-base font-bold truncate">
-                {currentCourse
-                  ? currentCourse.title || currentCourse.topic
-                  : "No Course Selected"}
-              </div>
-              {currentCourse && (
-                <span className="text-xs text-muted-foreground capitalize">
-                  {currentCourse.level} • {currentCourse.status}
-                </span>
-              )}
+      <TooltipProvider delayDuration={0}>
+        <div className="flex h-screen shrink-0" {...props}>
+          {/* ============================================ */}
+          {/* FIRST SIDEBAR: Discord-style Course Icons   */}
+          {/* ============================================ */}
+          <div className="flex flex-col w-[72px] bg-zinc-900 py-3 gap-2 items-center border-r border-zinc-800 shrink-0">
+            {/* App Logo */}
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-600 text-white mb-2 hover:rounded-xl transition-all duration-200 cursor-pointer">
+              <Command className="size-6" />
             </div>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <div className="flex items-center justify-between px-2 mb-2">
-                <SidebarGroupLabel>Curriculum</SidebarGroupLabel>
-                {currentCourse && (
+
+            <div className="w-8 h-[2px] bg-zinc-700 rounded-full mb-2" />
+
+            {/* Course Icons */}
+            <div className="flex flex-col gap-2 flex-1 overflow-y-auto scrollbar-hide">
+              {isLoadingCourses && courses.length === 0 ? (
+                <div className="flex items-center justify-center w-12 h-12">
+                  <Loader2 className="size-5 animate-spin text-zinc-400" />
+                </div>
+              ) : error && courses.length === 0 ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-red-500/20 text-red-400 cursor-pointer">
+                      <AlertCircle className="size-5" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={10}>
+                    {error}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                courses.map((course, index) => {
+                  const colors = getCourseColor(index);
+                  const isActive = currentCourse?.id === course.id;
+                  const initials = getCourseInitials(
+                    course.title || course.topic,
+                  );
+
+                  return (
+                    <Tooltip key={course.id}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => handleSelectCourse(course)}
+                          className={cn(
+                            "relative flex items-center justify-center w-12 h-12 font-semibold text-sm transition-all duration-200 cursor-pointer group",
+                            colors.bg,
+                            colors.text,
+                            isActive
+                              ? "rounded-xl"
+                              : "rounded-[24px] hover:rounded-xl",
+                          )}
+                        >
+                          {/* Active indicator */}
+                          {isActive && (
+                            <div className="absolute -left-3 w-1 h-10 bg-white rounded-r-full" />
+                          )}
+                          {/* Hover indicator */}
+                          {!isActive && (
+                            <div className="absolute -left-3 w-1 h-0 bg-white rounded-r-full transition-all duration-200 group-hover:h-5" />
+                          )}
+                          {initials}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="right"
+                        sideOffset={10}
+                        className="font-medium"
+                      >
+                        {course.title || course.topic}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })
+              )}
+
+              {/* Add Course Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <button
-                    onClick={() => {
-                      const setActiveView =
-                        useCourseStore.getState().setActiveView;
-                      setActiveView("network");
-                    }}
-                    className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-                    title="View Course Network Graph"
+                    onClick={() => setShowCreateDialog(true)}
+                    className="flex items-center justify-center w-12 h-12 rounded-[24px] bg-zinc-800 text-green-500 hover:rounded-xl hover:bg-green-600 hover:text-white transition-all duration-200 cursor-pointer"
                   >
-                    <Network className="size-3.5" />
-                    <span>Network</span>
+                    <Plus className="size-6" />
                   </button>
-                )}
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={10}>
+                  Create New Course
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* ============================================ */}
+          {/* SECOND SIDEBAR: Course Content/Curriculum   */}
+          {/* ============================================ */}
+          <div
+            className={cn(
+              "flex flex-col bg-sidebar border-r transition-all duration-300 ease-in-out overflow-hidden shrink-0",
+              courseSidebarOpen ? "w-[280px]" : "w-0",
+            )}
+          >
+            {/* Header */}
+            <div className="border-b p-4 shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-1 min-w-0 flex-1">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">
+                    Current Course
+                  </span>
+                  <div className="text-foreground text-base font-bold truncate">
+                    {currentCourse
+                      ? currentCourse.title || currentCourse.topic
+                      : "No Course Selected"}
+                  </div>
+                  {currentCourse && (
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {currentCourse.level} • {currentCourse.status}
+                    </span>
+                  )}
+                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={toggleCourseSidebar}
+                      className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <PanelLeftClose className="size-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Close sidebar</TooltipContent>
+                </Tooltip>
               </div>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {!currentCourse ? (
-                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                      <p>Create or select a course to get started</p>
-                    </div>
-                  ) : sections.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                      {currentCourse.status === "generating" ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <Loader2 className="size-5 animate-spin" />
-                          <p>Generating course content...</p>
-                        </div>
-                      ) : (
-                        <p>No sections yet</p>
-                      )}
-                    </div>
-                  ) : (
-                    sections.map((section, index) => (
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-2">
+                <div className="flex items-center justify-between px-2 mb-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Curriculum
+                  </span>
+                  {currentCourse && (
+                    <button
+                      onClick={() => {
+                        const setActiveView =
+                          useCourseStore.getState().setActiveView;
+                        setActiveView("network");
+                      }}
+                      className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                      title="View Course Network Graph"
+                    >
+                      <Network className="size-3.5" />
+                      <span>Network</span>
+                    </button>
+                  )}
+                </div>
+
+                {!currentCourse ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    <p>Create or select a course to get started</p>
+                  </div>
+                ) : sections.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    {currentCourse.status === "generating" ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="size-5 animate-spin" />
+                        <p>Generating course content...</p>
+                      </div>
+                    ) : (
+                      <p>No sections yet</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    {sections.map((section, index) => (
                       <CourseSectionItem
                         key={section.id}
                         section={section}
@@ -302,14 +362,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         isActive={activeSectionId === section.id}
                         onSelect={() => handleSelectSection(section)}
                       />
-                    ))
-                  )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
-      </Sidebar>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Toggle button when sidebar is closed */}
+          {!courseSidebarOpen && (
+            <div className="flex items-start pt-4 px-2 bg-sidebar border-r shrink-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleCourseSidebar}
+                    className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <PanelLeft className="size-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Open sidebar</TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+        </div>
+      </TooltipProvider>
     </>
   );
 }
@@ -332,7 +409,6 @@ function CourseSectionItem({
   const setActiveView = useCourseStore((state) => state.setActiveView);
 
   const handleSubItemClick = (view: ViewType) => {
-    // First select this section if not already active
     if (!isActive) {
       onSelect();
     }
@@ -341,121 +417,114 @@ function CourseSectionItem({
 
   return (
     <Collapsible defaultOpen={isActive} className="group/collapsible">
-      <SidebarMenuItem>
+      <div className="flex flex-col">
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton
-            tooltip={section.title}
-            className={`font-semibold text-sidebar-foreground ${
-              isActive ? "bg-accent" : ""
-            }`}
+          <button
             onClick={onSelect}
+            className={cn(
+              "flex items-center gap-2 w-full px-2 py-2 text-left text-sm font-medium rounded-md transition-colors",
+              isActive
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+            )}
           >
             <div
-              className={`flex size-5 items-center justify-center rounded-full text-[10px] font-bold transition-colors ${
+              className={cn(
+                "flex items-center justify-center size-6 rounded-full text-xs font-bold shrink-0 transition-colors",
                 isActive
                   ? "bg-primary text-primary-foreground"
-                  : "bg-black text-accent group-hover/collapsible:bg-primary group-hover/collapsible:text-primary-foreground"
-              }`}
+                  : "bg-muted text-muted-foreground group-hover/collapsible:bg-primary group-hover/collapsible:text-primary-foreground",
+              )}
             >
               {index + 1}
             </div>
-            <span className="truncate">{section.title}</span>
-            <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-          </SidebarMenuButton>
+            <span className="truncate flex-1">{section.title}</span>
+            <ChevronRight className="size-4 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+          </button>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <SidebarMenuSub>
-            {/* 1. Article (Direct Link) */}
-            <SidebarMenuSubItem>
-              <SidebarMenuSubButton
-                onClick={() => handleSubItemClick("article")}
-              >
-                <BookOpen className="size-4 text-green-600!" />
-                <span>Article</span>
-              </SidebarMenuSubButton>
-            </SidebarMenuSubItem>
+          <div className="ml-4 pl-4 border-l border-border mt-1 mb-2 flex flex-col gap-0.5">
+            {/* Article */}
+            <button
+              onClick={() => handleSubItemClick("article")}
+              className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+            >
+              <BookOpen className="size-4 text-green-600" />
+              <span>Article</span>
+            </button>
 
-            {/* 2. Study Material (Nested Dropdown) */}
-            <SidebarMenuSubItem>
-              <Collapsible className="group/study">
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuSubButton className="w-full justify-between">
-                    <div className="flex items-center gap-2">
-                      <BriefcaseBusiness className="size-4 text-blue-600" />
-                      <span>Study Material</span>
-                    </div>
-                    <ChevronRight className="size-3 transition-transform group-data-[state=open]/study:rotate-90" />
-                  </SidebarMenuSubButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub className="ml-4 border-l">
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        onClick={() => handleSubItemClick("mindmap")}
-                      >
-                        <Brain className="size-4 text-pink-600!" />
-                        <span>Mind Map</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        onClick={() => handleSubItemClick("flashcards")}
-                      >
-                        <Layers className="size-4 text-yellow-600!" />
-                        <span>Flashcards</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarMenuSubItem>
+            {/* Study Material Dropdown */}
+            <Collapsible className="group/study">
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center justify-between w-full px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">
+                  <div className="flex items-center gap-2">
+                    <BriefcaseBusiness className="size-4 text-blue-600" />
+                    <span>Study Material</span>
+                  </div>
+                  <ChevronRight className="size-3 transition-transform group-data-[state=open]/study:rotate-90" />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="ml-4 pl-2 border-l border-border mt-1 flex flex-col gap-0.5">
+                  <button
+                    onClick={() => handleSubItemClick("mindmap")}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                  >
+                    <Brain className="size-4 text-pink-600" />
+                    <span>Mind Map</span>
+                  </button>
+                  <button
+                    onClick={() => handleSubItemClick("flashcards")}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                  >
+                    <Layers className="size-4 text-yellow-600" />
+                    <span>Flashcards</span>
+                  </button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
-            {/* 3. Quiz (Nested Dropdown) */}
-            <SidebarMenuSubItem>
-              <Collapsible className="group/quiz">
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuSubButton className="w-full justify-between">
-                    <div className="flex items-center gap-2">
-                      <Gamepad2 className="size-4 text-red-600" />
-                      <span>Quiz</span>
-                    </div>
-                    <ChevronRight className="size-3 transition-transform group-data-[state=open]/quiz:rotate-90" />
-                  </SidebarMenuSubButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub className="ml-4 border-l">
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        onClick={() => handleSubItemClick("mcq")}
-                      >
-                        <ListChecks className="size-4 text-purple-600!" />
-                        <span>Multiple Choice</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        onClick={() => handleSubItemClick("tf")}
-                      >
-                        <ToggleLeft className="size-4 text-amber-900!" />
-                        <span>True / False</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        onClick={() => handleSubItemClick("fill")}
-                      >
-                        <Type className="size-4 text-stone-600!" />
-                        <span>Fill Ups</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarMenuSubItem>
-          </SidebarMenuSub>
+            {/* Quiz Dropdown */}
+            <Collapsible className="group/quiz">
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center justify-between w-full px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Gamepad2 className="size-4 text-red-600" />
+                    <span>Quiz</span>
+                  </div>
+                  <ChevronRight className="size-3 transition-transform group-data-[state=open]/quiz:rotate-90" />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="ml-4 pl-2 border-l border-border mt-1 flex flex-col gap-0.5">
+                  <button
+                    onClick={() => handleSubItemClick("mcq")}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                  >
+                    <ListChecks className="size-4 text-purple-600" />
+                    <span>Multiple Choice</span>
+                  </button>
+                  <button
+                    onClick={() => handleSubItemClick("tf")}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                  >
+                    <ToggleLeft className="size-4 text-amber-700" />
+                    <span>True / False</span>
+                  </button>
+                  <button
+                    onClick={() => handleSubItemClick("fill")}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                  >
+                    <Type className="size-4 text-stone-600" />
+                    <span>Fill Ups</span>
+                  </button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
         </CollapsibleContent>
-      </SidebarMenuItem>
+      </div>
     </Collapsible>
   );
 }

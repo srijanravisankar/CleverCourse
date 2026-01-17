@@ -14,12 +14,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 import { MindMap } from "@/components/studyMaterial/MindMap";
 import { MultipleChoice } from "@/components/quiz/MultipleChoice";
 import { Button } from "@/components/ui/button";
@@ -92,16 +86,12 @@ export default function CoursePage() {
     : null;
 
   return (
-    <SidebarProvider
-      style={{ "--sidebar-width": "350px" } as React.CSSProperties}
-    >
+    <div className="flex min-h-screen w-full">
       <AppSidebar />
 
-      <SidebarInset className="flex flex-col h-screen overflow-hidden">
+      <main className="flex flex-col flex-1 h-screen overflow-hidden">
         {/* Header Area */}
         <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4 z-10">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
@@ -340,8 +330,8 @@ export default function CoursePage() {
             )}
           </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </main>
+    </div>
   );
 }
 
