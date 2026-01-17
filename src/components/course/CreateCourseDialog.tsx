@@ -17,30 +17,50 @@ import {
   Calendar,
   AlertCircle,
   Info,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  generateAndCreateCourse,
+  type FileUpload,
+} from "@/lib/course-generator";
+import type { CourseLevel, CourseTone } from "@/db/types";
 
 interface CreateCourseDialogProps {
   open: boolean;
   onClose: () => void;
+  onCourseCreated?: (courseId: string) => void;
 }
 
-interface UploadedFile {
+interface UploadedFileItem {
   id: string;
   name: string;
   type: "file" | "folder";
   size?: string;
   path?: string;
+  file?: File; // Store the actual File object
 }
 
-export function CreateCourseDialog({ open, onClose }: CreateCourseDialogProps) {
+type GenerationStatus =
+  | "idle"
+  | "preparing"
+  | "generating"
+  | "complete"
+  | "error";
+
+export function CreateCourseDialog({
+  open,
+  onClose,
+  onCourseCreated,
+}: CreateCourseDialogProps) {
   const [formData, setFormData] = React.useState({
     topic: "",
-    level: "beginner",
+    level: "beginner" as CourseLevel,
     goal: "",
-    tone: "professional",
+    tone: "professional" as CourseTone,
     sectionCount: "5",
     targetAudience: "",
     prerequisites: "",
@@ -49,9 +69,15 @@ export function CreateCourseDialog({ open, onClose }: CreateCourseDialogProps) {
     endDate: "",
   });
 
-  const [uploadedFiles, setUploadedFiles] = React.useState<UploadedFile[]>([]);
+  const [uploadedFiles, setUploadedFiles] = React.useState<UploadedFileItem[]>(
+    [],
+  );
   const [isDragging, setIsDragging] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [generationStatus, setGenerationStatus] =
+    React.useState<GenerationStatus>("idle");
+  const [generationMessage, setGenerationMessage] = React.useState("");
+  const [generationError, setGenerationError] = React.useState("");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const folderInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -80,16 +106,134 @@ export function CreateCourseDialog({ open, onClose }: CreateCourseDialogProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Convert File to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data:mime/type;base64, prefix
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
-    // TODO: Handle course creation with AI
-    console.log("Creating course with:", formData, uploadedFiles);
-    onClose();
+    setGenerationStatus("preparing");
+    setGenerationMessage("Preparing course generation...");
+    setGenerationError("");
+
+    try {
+      // Convert uploaded files to FileUpload format
+      const filesToUpload: FileUpload[] = [];
+
+      for (const uploadedFile of uploadedFiles) {
+        if (uploadedFile.file && uploadedFile.type === "file") {
+          const base64 = await fileToBase64(uploadedFile.file);
+          filesToUpload.push({
+            name: uploadedFile.name,
+            type: uploadedFile.file.type,
+            size: uploadedFile.file.size,
+            data: base64,
+          });
+        }
+      }
+
+      setGenerationStatus("generating");
+      setGenerationMessage(
+        `Generating ${formData.sectionCount} sections with AI... This may take a few minutes.`,
+      );
+
+      const result = await generateAndCreateCourse(
+        {
+          topic: formData.topic,
+          level: formData.level,
+          goal: formData.goal,
+          tone: formData.tone,
+          targetAudience: formData.targetAudience || undefined,
+          prerequisites: formData.prerequisites || undefined,
+          sectionCount: parseInt(formData.sectionCount),
+          timeCommitment: parseInt(formData.timeCommitment),
+          startDate: formData.startDate
+            ? new Date(formData.startDate)
+            : undefined,
+          endDate: formData.endDate ? new Date(formData.endDate) : undefined,
+        },
+        filesToUpload,
+      );
+
+      if (result.success && result.courseId) {
+        setGenerationStatus("complete");
+        setGenerationMessage("Course created successfully!");
+
+        // Call the callback if provided
+        if (onCourseCreated) {
+          onCourseCreated(result.courseId);
+        }
+
+        // Close after a short delay
+        setTimeout(() => {
+          onClose();
+          // Reset form
+          setFormData({
+            topic: "",
+            level: "beginner",
+            goal: "",
+            tone: "professional",
+            sectionCount: "5",
+            targetAudience: "",
+            prerequisites: "",
+            timeCommitment: "30",
+            startDate: "",
+            endDate: "",
+          });
+          setUploadedFiles([]);
+          setGenerationStatus("idle");
+        }, 1500);
+      } else {
+        setGenerationStatus("error");
+        // Parse error message for user-friendly display
+        let errorMsg = result.error || "Failed to create course";
+        if (
+          errorMsg.includes("429") ||
+          errorMsg.includes("quota") ||
+          errorMsg.includes("Too Many Requests")
+        ) {
+          errorMsg =
+            "API rate limit reached. The system will retry automatically, but you may need to wait a few minutes before trying again.";
+        } else if (
+          errorMsg.includes("after") &&
+          errorMsg.includes("attempts")
+        ) {
+          errorMsg =
+            "Generation timed out due to API limits. Please wait a few minutes and try again with fewer sections.";
+        }
+        setGenerationError(errorMsg);
+      }
+    } catch (error) {
+      console.error("Course creation error:", error);
+      setGenerationStatus("error");
+      let errorMsg =
+        error instanceof Error ? error.message : "An unexpected error occurred";
+      if (
+        errorMsg.includes("429") ||
+        errorMsg.includes("quota") ||
+        errorMsg.includes("Too Many Requests")
+      ) {
+        errorMsg =
+          "API rate limit reached. Please wait a few minutes before trying again.";
+      }
+      setGenerationError(errorMsg);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -98,12 +242,13 @@ export function CreateCourseDialog({ open, onClose }: CreateCourseDialogProps) {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const newFiles: UploadedFile[] = files.map((file) => ({
+    const newFiles: UploadedFileItem[] = files.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       name: file.name,
       type: "file",
       size: `${(file.size / 1024).toFixed(1)} KB`,
       path: file.webkitRelativePath || file.name,
+      file: file, // Store the actual File object
     }));
     setUploadedFiles((prev) => [...prev, ...newFiles]);
   };
@@ -123,12 +268,13 @@ export function CreateCourseDialog({ open, onClose }: CreateCourseDialogProps) {
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
-    const newFiles: UploadedFile[] = files.map((file) => ({
+    const newFiles: UploadedFileItem[] = files.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       name: file.name,
       type: "file",
       size: `${(file.size / 1024).toFixed(1)} KB`,
       path: file.webkitRelativePath || file.name,
+      file: file,
     }));
     setUploadedFiles((prev) => [...prev, ...newFiles]);
   };
@@ -140,16 +286,17 @@ export function CreateCourseDialog({ open, onClose }: CreateCourseDialogProps) {
     // Group files by their root folder
     const folderName = files[0].webkitRelativePath.split("/")[0];
 
-    const newFiles: UploadedFile[] = files.map((file) => ({
+    const newFiles: UploadedFileItem[] = files.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       name: file.name,
       type: "file",
       size: `${(file.size / 1024).toFixed(1)} KB`,
       path: file.webkitRelativePath,
+      file: file,
     }));
 
     // Add a folder entry
-    const folderEntry: UploadedFile = {
+    const folderEntry: UploadedFileItem = {
       id: Math.random().toString(36).substr(2, 9),
       name: folderName,
       type: "folder",
@@ -163,17 +310,78 @@ export function CreateCourseDialog({ open, onClose }: CreateCourseDialogProps) {
     setUploadedFiles((prev) => prev.filter((file) => file.id !== id));
   };
 
+  const isGenerating =
+    generationStatus === "preparing" || generationStatus === "generating";
+
   return (
     <>
       {/* Backdrop with blur */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-in fade-in duration-200"
-        onClick={onClose}
+        onClick={isGenerating ? undefined : onClose}
       />
 
       {/* Dialog */}
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl animate-in zoom-in-95 fade-in duration-200">
         <div className="bg-background border rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          {/* Generation Overlay */}
+          {isGenerating && (
+            <div className="absolute inset-0 bg-background/95 z-10 flex flex-col items-center justify-center p-8">
+              <div className="relative">
+                <div className="size-20 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center animate-pulse">
+                  <Loader2 className="size-10 text-purple-600 animate-spin" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold mt-6 text-center">
+                Creating Your Course
+              </h3>
+              <p className="text-muted-foreground text-center mt-2 max-w-md">
+                {generationMessage}
+              </p>
+              <div className="flex items-center gap-2 mt-6 text-sm text-muted-foreground">
+                <Sparkles className="size-4 text-purple-600 animate-pulse" />
+                <span>AI is generating personalized content...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Success Overlay */}
+          {generationStatus === "complete" && (
+            <div className="absolute inset-0 bg-background/95 z-10 flex flex-col items-center justify-center p-8">
+              <div className="size-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <CheckCircle2 className="size-10 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold mt-6 text-center text-green-600">
+                Course Created!
+              </h3>
+              <p className="text-muted-foreground text-center mt-2">
+                {generationMessage}
+              </p>
+            </div>
+          )}
+
+          {/* Error Display */}
+          {generationStatus === "error" && (
+            <div className="absolute inset-0 bg-background/95 z-10 flex flex-col items-center justify-center p-8">
+              <div className="size-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <AlertCircle className="size-10 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold mt-6 text-center text-red-600">
+                Generation Failed
+              </h3>
+              <p className="text-muted-foreground text-center mt-2 max-w-md">
+                {generationError}
+              </p>
+              <Button
+                onClick={() => setGenerationStatus("idle")}
+                className="mt-6"
+                variant="outline"
+              >
+                Try Again
+              </Button>
+            </div>
+          )}
+
           {/* Header */}
           <div className="border-b p-6 bg-linear-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
             <div className="flex items-start justify-between">
