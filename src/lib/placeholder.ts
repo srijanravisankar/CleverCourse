@@ -1,3 +1,36 @@
+export interface MCQ {
+  question: string;
+  options: string[];
+  answer: string;
+}
+
+export interface TrueFalse {
+  question: string;
+  answer: boolean;
+  explanation: string;
+}
+
+export interface FillUp {
+  sentence: string;
+  missingWord: string;
+}
+
+export interface CourseSection {
+  sectionTitle: string;
+  article: {
+    pages: { pageTitle: string; content: string }[];
+  };
+  studyMaterial: {
+    mindMap: any; // Hierarchical structure we built earlier
+    flashcards: { front: string; back: string }[];
+  };
+  quiz: {
+    mcqs: MCQ[];
+    trueFalse: TrueFalse[];
+    fillUps: FillUp[];
+  };
+}
+
 export const MOCK_COURSE_SECTION = {
   sectionTitle: "Introduction to React Hooks",
   article: {

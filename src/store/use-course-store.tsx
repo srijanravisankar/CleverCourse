@@ -1,11 +1,15 @@
 import { create } from "zustand";
 
-export type ViewType =
-  | "article"
-  | "flashcards"
-  | "quiz"
-  | "mindmap"
-  | "network";
+// Update the ViewType union
+export type ViewType = 
+  | "article" 
+  | "flashcards" 
+  | "mindmap" 
+  | "network" 
+  | "mcq"   
+  | "tf"     
+  | "fill"   
+  | "quiz";    
 
 interface CourseState {
   activeView: ViewType;

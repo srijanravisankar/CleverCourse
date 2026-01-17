@@ -247,7 +247,7 @@ function CourseSectionItem({
                   <SidebarMenuSub className="ml-4 border-l">
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        onClick={() => setActiveView("quiz")}
+                        onClick={() => setActiveView("mcq")}
                       >
                         <ListChecks className="size-4 text-purple-600!" />
                         <span>Multiple Choice</span>
@@ -255,7 +255,7 @@ function CourseSectionItem({
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        onClick={() => setActiveView("quiz")}
+                        onClick={() => setActiveView("tf")}
                       >
                         <ToggleLeft className="size-4 text-amber-900!" />
                         <span>True / False</span>
@@ -263,7 +263,7 @@ function CourseSectionItem({
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        onClick={() => setActiveView("quiz")}
+                        onClick={() => setActiveView("fill")}
                       >
                         <Type className="size-4 text-stone-600!" />
                         <span>Fill Ups</span>
