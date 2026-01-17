@@ -16,6 +16,7 @@ import {
   Network,
 } from "lucide-react";
 
+import { CreateCourseDialog } from "@/components/course/CreateCourseDialog";
 import {
   Collapsible,
   CollapsibleContent,
@@ -60,86 +61,99 @@ const COURSE_DATA = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  return (
-    <Sidebar
-      collapsible="icon"
-      className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
-      {...props}
-    >
-      {/* FIRST SIDEBAR: Course Icons (Discord Style) */}
-      <Sidebar
-        collapsible="none"
-        className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
-      >
-        <SidebarHeader>
-          <SidebarMenuButton size="lg" className="md:h-8 md:p-0">
-            <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-              <Command className="size-4" />
-            </div>
-          </SidebarMenuButton>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarMenu>
-              {/* This would map through your courses */}
-              <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Course 1" isActive>
-                  <div className="size-4 rounded-full bg-blue-500" />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Create New Course">
-                  <Plus className="size-4" />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-        </SidebarContent>
-      </Sidebar>
+  const [showCreateDialog, setShowCreateDialog] = React.useState(false);
 
-      {/* SECOND SIDEBAR: Course Sections */}
-      <Sidebar collapsible="none" className="hidden flex-1 md:flex">
-        <SidebarHeader className="border-b p-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">
-              Current Course
-            </span>
-            <div className="text-foreground text-base font-bold truncate">
-              {COURSE_DATA.courseTitle}
-            </div>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup>
-            <div className="flex items-center justify-between px-2 mb-2">
-              <SidebarGroupLabel>Curriculum</SidebarGroupLabel>
-              <button
-                onClick={() => {
-                  const setActiveView = useCourseStore.getState().setActiveView;
-                  setActiveView("network");
-                }}
-                className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-                title="View Course Network Graph"
-              >
-                <Network className="size-3.5" />
-                <span>Network</span>
-              </button>
-            </div>
-            <SidebarGroupContent>
+  return (
+    <>
+      <CreateCourseDialog
+        open={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+      />
+
+      <Sidebar
+        collapsible="icon"
+        className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
+        {...props}
+      >
+        {/* FIRST SIDEBAR: Course Icons (Discord Style) */}
+        <Sidebar
+          collapsible="none"
+          className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+        >
+          <SidebarHeader>
+            <SidebarMenuButton size="lg" className="md:h-8 md:p-0">
+              <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                <Command className="size-4" />
+              </div>
+            </SidebarMenuButton>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
               <SidebarMenu>
-                {COURSE_DATA.sections.map((section, index) => (
-                  <CourseSectionItem
-                    key={section.id}
-                    section={section}
-                    index={index}
-                  />
-                ))}
+                {/* This would map through your courses */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton tooltip="Course 1" isActive>
+                    <div className="size-4 rounded-full bg-blue-500" />
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="Create New Course"
+                    onClick={() => setShowCreateDialog(true)}
+                  >
+                    <Plus className="size-4" />
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+
+        {/* SECOND SIDEBAR: Course Sections */}
+        <Sidebar collapsible="none" className="hidden flex-1 md:flex">
+          <SidebarHeader className="border-b p-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">
+                Current Course
+              </span>
+              <div className="text-foreground text-base font-bold truncate">
+                {COURSE_DATA.courseTitle}
+              </div>
+            </div>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
+              <div className="flex items-center justify-between px-2 mb-2">
+                <SidebarGroupLabel>Curriculum</SidebarGroupLabel>
+                <button
+                  onClick={() => {
+                    const setActiveView =
+                      useCourseStore.getState().setActiveView;
+                    setActiveView("network");
+                  }}
+                  className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                  title="View Course Network Graph"
+                >
+                  <Network className="size-3.5" />
+                  <span>Network</span>
+                </button>
+              </div>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {COURSE_DATA.sections.map((section, index) => (
+                    <CourseSectionItem
+                      key={section.id}
+                      section={section}
+                      index={index}
+                    />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
       </Sidebar>
-    </Sidebar>
+    </>
   );
 }
 
