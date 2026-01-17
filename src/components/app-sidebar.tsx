@@ -29,6 +29,7 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
+import { useCourseStore, ViewType } from "@/store/use-course-store"
 
 // Mock data for the Second Sidebar
 const COURSE_DATA = {
@@ -114,12 +115,63 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
  * MODULAR COMPONENT: CourseSectionItem
  * Handles the collapsible dropdown logic for each section.
  */
+// function CourseSectionItem({ section }: { section: typeof COURSE_DATA.sections[0] }) {
+//   const setActiveView = useCourseStore((state) => state.setActiveView)
+
+//   const handleNav = (view: ViewType) => {
+//     setActiveView(view)
+//   }
+
+//   return (
+//     <Collapsible defaultOpen className="group/collapsible">
+//       <SidebarMenuItem>
+//         <CollapsibleTrigger asChild>
+//           <SidebarMenuButton tooltip={section.title} className="font-medium text-sidebar-foreground/80">
+//             <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+//             <span className="truncate">{section.title}</span>
+//           </SidebarMenuButton>
+//         </CollapsibleTrigger>
+        
+//         <CollapsibleContent>
+//           <SidebarMenuSub>
+//             {/* Article Link */}
+//             <SidebarMenuSubItem>
+//               <SidebarMenuSubButton onClick={() => handleNav("article")}>
+//                 <BookOpen className="size-4 text-blue-500" />
+//                 <span>Article</span>
+//               </SidebarMenuSubButton>
+//             </SidebarMenuSubItem>
+
+//             {/* Flashcards Link */}
+//             <SidebarMenuSubItem>
+//               <SidebarMenuSubButton onClick={() => handleNav("flashcards")}>
+//                 <Brain className="size-4 text-purple-500" />
+//                 <span>Flashcards</span>
+//               </SidebarMenuSubButton>
+//             </SidebarMenuSubItem>
+
+//             {/* Quiz Link */}
+//             <SidebarMenuSubItem>
+//               <SidebarMenuSubButton onClick={() => handleNav("quiz")}>
+//                 <Gamepad2 className="size-4 text-orange-500" />
+//                 <span>Quiz</span>
+//               </SidebarMenuSubButton>
+//             </SidebarMenuSubItem>
+//           </SidebarMenuSub>
+//         </CollapsibleContent>
+//       </SidebarMenuItem>
+//     </Collapsible>
+//   )
+// }
+
 function CourseSectionItem({ section }: { section: typeof COURSE_DATA.sections[0] }) {
+  const setActiveView = useCourseStore((state) => state.setActiveView)
+
   return (
     <Collapsible defaultOpen className="group/collapsible">
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton tooltip={section.title} className="font-medium text-sidebar-foreground/80">
+          <SidebarMenuButton tooltip={section.title} className="font-semibold text-sidebar-foreground">
             <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
             <span className="truncate">{section.title}</span>
           </SidebarMenuButton>
@@ -127,35 +179,77 @@ function CourseSectionItem({ section }: { section: typeof COURSE_DATA.sections[0
         
         <CollapsibleContent>
           <SidebarMenuSub>
-            {/* Article Link */}
+            {/* 1. Article (Direct Link) */}
             <SidebarMenuSubItem>
-              <SidebarMenuSubButton asChild>
-                <a href="#article" className="flex items-center gap-2">
-                  <BookOpen className="size-4 text-blue-500" />
-                  <span>Article</span>
-                </a>
+              <SidebarMenuSubButton onClick={() => setActiveView("article")}>
+                <BookOpen className="size-4 text-blue-500" />
+                <span>Article</span>
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>
 
-            {/* Flashcards Link */}
+            {/* 2. Study Material (Nested Dropdown) */}
             <SidebarMenuSubItem>
-              <SidebarMenuSubButton asChild>
-                <a href="#flashcards" className="flex items-center gap-2">
-                  <Brain className="size-4 text-purple-500" />
-                  <span>Flashcards</span>
-                </a>
-              </SidebarMenuSubButton>
+              <Collapsible className="group/study">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuSubButton className="w-full justify-between">
+                    <div className="flex items-center gap-2">
+                      <Brain className="size-4 text-purple-500" />
+                      <span>Study Material</span>
+                    </div>
+                    <ChevronRight className="size-3 transition-transform group-data-[state=open]/study:rotate-90" />
+                  </SidebarMenuSubButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub className="ml-4 border-l">
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton onClick={() => setActiveView("mindmap")}>
+                        <span>Mind Map</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton onClick={() => setActiveView("flashcards")}>
+                        <span>Flashcards</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </Collapsible>
             </SidebarMenuSubItem>
 
-            {/* Quiz Link */}
+            {/* 3. Quiz (Nested Dropdown) */}
             <SidebarMenuSubItem>
-              <SidebarMenuSubButton asChild>
-                <a href="#quiz" className="flex items-center gap-2">
-                  <Gamepad2 className="size-4 text-orange-500" />
-                  <span>Quiz</span>
-                </a>
-              </SidebarMenuSubButton>
+              <Collapsible className="group/quiz">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuSubButton className="w-full justify-between">
+                    <div className="flex items-center gap-2">
+                      <Gamepad2 className="size-4 text-orange-500" />
+                      <span>Quiz</span>
+                    </div>
+                    <ChevronRight className="size-3 transition-transform group-data-[state=open]/quiz:rotate-90" />
+                  </SidebarMenuSubButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub className="ml-4 border-l">
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton onClick={() => setActiveView("quiz")}>
+                        <span>Multiple Choice</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton onClick={() => setActiveView("quiz")}>
+                        <span>True / False</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton onClick={() => setActiveView("quiz")}>
+                        <span>Fill Ups</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </Collapsible>
             </SidebarMenuSubItem>
+
           </SidebarMenuSub>
         </CollapsibleContent>
       </SidebarMenuItem>

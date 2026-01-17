@@ -1,4 +1,11 @@
+"use client"
+
+import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
+import { ArticleView } from "@/components/course/ArticleView"
+import { Flashcards } from "@/components/studyMaterial/Flashcards"
+import { MOCK_COURSE_SECTION } from "@/lib/placeholder"
+import { useCourseStore } from "@/store/use-course-store"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,44 +21,62 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 
-export default function Page() {
+export default function CoursePage() {
+  const { activeView } = useCourseStore()
+  const [isMounted, setIsMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  if (!isMounted) return null
+
   return (
     <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "350px",
-        } as React.CSSProperties
-      }
+      style={{ "--sidebar-width": "350px" } as React.CSSProperties}
     >
       <AppSidebar />
-      <SidebarInset>
-        <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4">
+      
+      <SidebarInset className="flex flex-col">
+        {/* Header Area */}
+        <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4 z-10">
           <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
+          <Separator orientation="vertical" className="mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="#">All Inboxes</BreadcrumbLink>
+                <BreadcrumbLink href="#">React Fundamentals</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>
-                <BreadcrumbPage>Inbox</BreadcrumbPage>
+                <BreadcrumbPage className="capitalize">{activeView}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          {Array.from({ length: 24 }).map((_, index) => (
-            <div
-              key={index}
-              className="bg-muted/50 aspect-video h-12 w-full rounded-lg"
-            />
-          ))}
+
+        {/* Dynamic Content Area */}
+        <div className="flex-1 overflow-y-auto bg-slate-50/30 p-4">
+          {activeView === "article" && (
+            <ArticleView pages={MOCK_COURSE_SECTION.article.pages} />
+          )}
+          
+          {activeView === "flashcards" && (
+            <div className="max-w-xl mx-auto py-10">
+              <Flashcards cards={MOCK_COURSE_SECTION.studyMaterial.flashcards} />
+            </div>
+          )}
+
+          {activeView === "quiz" && (
+            <div className="max-w-2xl mx-auto py-10 text-center">
+              <h2 className="text-2xl font-bold mb-4">Ready for the Quiz?</h2>
+              <p className="text-muted-foreground italic">The Quiz component will go here next!</p>
+            </div>
+          )}
         </div>
       </SidebarInset>
+      
+      {/* TODO: Add the "Interactive Chat" sidebar here for the right side */}
     </SidebarProvider>
   )
 }
