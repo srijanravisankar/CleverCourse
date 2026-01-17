@@ -509,15 +509,33 @@ export function ArticleView({ pages }: ArticleViewProps) {
               {/* Slideshow Controls */}
               <TooltipProvider>
                 <div className="flex items-center gap-1 mr-4 bg-secondary rounded-full p-1">
+                  
+                  {isSlideshowActive && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="h-6 w-6 bg-muted-foreground text-accent-foreground hover:bg-primary/90"
+                          onClick={handlePrevSentence}
+                          disabled={currentSentenceIndex <= 0}
+                        >
+                          <ChevronLeft className="size-4 text-white" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Previous sentence (←)</TooltipContent>
+                    </Tooltip>
+                  )}
+                  
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant={isPlaying ? "default" : "ghost"}
                         size="icon"
-                        className="h-8 w-8 rounded-full"
+                        className={`h-8 w-8 rounded-full bg-green-600 text-white hover:bg-green-700`}
                         onClick={handlePlay}
                       >
-                        {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
+                        {isPlaying ? <Pause className="size-4 text-white" /> : <Play className="size-4 text-primary" />}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -530,11 +548,33 @@ export function ArticleView({ pages }: ArticleViewProps) {
                       <TooltipTrigger asChild>
                         <Button
                           variant="ghost"
+                          size="icon-sm"
+                          className="h-6 w-6 bg-muted-foreground text-accent-foreground hover:bg-primary/90"
+                          onClick={handleNextSentence}
+                          disabled={currentSentenceIndex >= sentenceData.length - 1}
+                        >
+                          <ChevronRight className="size-4 text-white" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Next sentence (→)</TooltipContent>
+                    </Tooltip>
+                  )}
+                    
+                  {isSlideshowActive && (
+                    <div className="w-px h-5 bg-border mx-1" />
+                  )}
+
+
+                  {isSlideshowActive && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-full"
+                          className="h-8 w-8 rounded-full bg-red-600 text-white hover:bg-red-700"
                           onClick={handleStop}
                         >
-                          <Square className="size-3" />
+                          <Square className="size-3 text-white" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Stop slideshow</TooltipContent>
@@ -574,46 +614,13 @@ export function ArticleView({ pages }: ArticleViewProps) {
                         <TooltipContent>
                           {enableHighlight ? "Disable highlight" : "Enable highlight"}
                         </TooltipContent>
-                      </Tooltip>
-
-                      <div className="w-px h-5 bg-border mx-1" />
-                      
-                      {/* Sentence Navigation */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={handlePrevSentence}
-                            disabled={currentSentenceIndex <= 0}
-                          >
-                            <ChevronLeft className="size-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Previous sentence (←)</TooltipContent>
-                      </Tooltip>
-
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={handleNextSentence}
-                            disabled={currentSentenceIndex >= sentenceData.length - 1}
-                          >
-                            <ChevronRight className="size-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Next sentence (→)</TooltipContent>
-                      </Tooltip>
+                      </Tooltip>                      
                     </>
                   )}
                 </div>
               </TooltipProvider>
 
-              <span className="text-sm font-medium text-muted-foreground bg-secondary px-3 py-1 rounded-full">
+              <span className="text-sm font-medium text-muted-foreground bg-secondary px-3 py-1 rounded-full inline-flex items-center gap-2 whitespace-nowrap flex-shrink-0">
                 Page {currentPage + 1} of {totalPages}
               </span>
             </div>
