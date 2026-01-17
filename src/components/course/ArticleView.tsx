@@ -330,6 +330,64 @@ export function ArticleView({ pages }: ArticleViewProps) {
     setCurrentSentenceIndex(-1)
   }
 
+  // Navigate to next sentence
+  const handleNextSentence = React.useCallback(() => {
+    if (!isSlideshowActive || sentenceData.length === 0) return
+    
+    window.speechSynthesis?.cancel()
+    
+    // Find next non-code sentence
+    let nextIndex = currentSentenceIndex + 1
+    while (nextIndex < sentenceData.length && sentenceData[nextIndex].isCode) {
+      nextIndex++
+    }
+    
+    if (nextIndex < sentenceData.length) {
+      setCurrentSentenceIndex(nextIndex)
+      resumeIndexRef.current = nextIndex
+    }
+  }, [isSlideshowActive, currentSentenceIndex, sentenceData])
+
+  // Navigate to previous sentence
+  const handlePrevSentence = React.useCallback(() => {
+    if (!isSlideshowActive || sentenceData.length === 0) return
+    
+    window.speechSynthesis?.cancel()
+    
+    // Find previous non-code sentence
+    let prevIndex = currentSentenceIndex - 1
+    while (prevIndex >= 0 && sentenceData[prevIndex].isCode) {
+      prevIndex--
+    }
+    
+    if (prevIndex >= 0) {
+      setCurrentSentenceIndex(prevIndex)
+      resumeIndexRef.current = prevIndex
+    }
+  }, [isSlideshowActive, currentSentenceIndex, sentenceData])
+
+  // Keyboard navigation for sentences
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isSlideshowActive) return
+      
+      if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        handleNextSentence()
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        handlePrevSentence()
+      } else if (e.key === ' ') {
+        // Space bar to play/pause
+        e.preventDefault()
+        handlePlay()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSlideshowActive, handleNextSentence, handlePrevSentence])
+
   const handleNext = () => {
     if (isPlaying) {
       window.speechSynthesis?.cancel()
@@ -511,6 +569,39 @@ export function ArticleView({ pages }: ArticleViewProps) {
                         <TooltipContent>
                           {enableHighlight ? "Disable highlight" : "Enable highlight"}
                         </TooltipContent>
+                      </Tooltip>
+
+                      <div className="w-px h-5 bg-border mx-1" />
+                      
+                      {/* Sentence Navigation */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={handlePrevSentence}
+                            disabled={currentSentenceIndex <= 0}
+                          >
+                            <ChevronLeft className="size-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Previous sentence (←)</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={handleNextSentence}
+                            disabled={currentSentenceIndex >= sentenceData.length - 1}
+                          >
+                            <ChevronRight className="size-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Next sentence (→)</TooltipContent>
                       </Tooltip>
                     </>
                   )}
