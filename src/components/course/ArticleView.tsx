@@ -169,6 +169,7 @@ function splitMarkdownIntoSentences(markdown: string): Array<{ markdown: string;
 export function ArticleView({ pages }: ArticleViewProps) {
   const [currentPage, setCurrentPage] = React.useState(0)
   const [isPlaying, setIsPlaying] = React.useState(false)
+  const [isSlideshowActive, setIsSlideshowActive] = React.useState(false) // Tracks if slideshow started (even if paused)
   const [isSpeaking, setIsSpeaking] = React.useState(false)
   const [enableTTS, setEnableTTS] = React.useState(true)
   const [enableHighlight, setEnableHighlight] = React.useState(true)
@@ -231,6 +232,9 @@ export function ArticleView({ pages }: ArticleViewProps) {
     })
   }, [enableTTS, sentenceData])
 
+  // Use a ref to track the resume position (persists across re-renders)
+  const resumeIndexRef = React.useRef(0)
+
   // Main slideshow loop
   React.useEffect(() => {
     if (!isPlaying) return
@@ -238,10 +242,14 @@ export function ArticleView({ pages }: ArticleViewProps) {
     let cancelled = false
 
     const runSlideshow = async () => {
-      for (let i = currentSentenceIndex === -1 ? 0 : currentSentenceIndex; i < sentenceData.length; i++) {
+      // Start from the resume position
+      const startIndex = resumeIndexRef.current
+      
+      for (let i = startIndex; i < sentenceData.length; i++) {
         if (cancelled) break
 
         setCurrentSentenceIndex(i)
+        resumeIndexRef.current = i // Update resume position
         
         const sentence = sentenceData[i]
         
@@ -267,10 +275,12 @@ export function ArticleView({ pages }: ArticleViewProps) {
       // Move to next page if available
       if (currentPage < totalPages - 1) {
         setCurrentPage(prev => prev + 1)
+        resumeIndexRef.current = 0 // Reset for new page
         setCurrentSentenceIndex(-1)
       } else {
         // End of slideshow
         setIsPlaying(false)
+        resumeIndexRef.current = 0
         setCurrentSentenceIndex(-1)
       }
     }
@@ -283,27 +293,40 @@ export function ArticleView({ pages }: ArticleViewProps) {
     }
   }, [isPlaying, currentPage, sentenceData.length, enableTTS, speakSentence, totalPages])
 
-  // Reset sentence index when page changes during slideshow
+  // Reset sentence index only when PAGE changes (not when play/pause)
+  const prevPageRef = React.useRef(currentPage)
   React.useEffect(() => {
-    if (isPlaying) {
+    if (prevPageRef.current !== currentPage) {
+      prevPageRef.current = currentPage
+      resumeIndexRef.current = 0 // Reset resume position for new page
       setCurrentSentenceIndex(0)
     }
-  }, [currentPage, isPlaying])
+  }, [currentPage])
 
   const handlePlay = () => {
     if (isPlaying) {
+      // Pause - keep position for resume (resumeIndexRef already has current position)
       setIsPlaying(false)
       window.speechSynthesis?.cancel()
-      setCurrentSentenceIndex(-1)
+      // Keep isSlideshowActive true so controls stay visible
     } else {
+      // Resume/Start
       setIsPlaying(true)
-      setCurrentSentenceIndex(0)
+      setIsSlideshowActive(true) // Mark slideshow as active
+      // If no sentence selected yet, start from beginning
+      if (currentSentenceIndex < 0) {
+        resumeIndexRef.current = 0
+        setCurrentSentenceIndex(0)
+      }
+      // Otherwise resumeIndexRef already has the correct position
     }
   }
 
   const handleStop = () => {
     setIsPlaying(false)
+    setIsSlideshowActive(false) // Only stop hides the controls
     window.speechSynthesis?.cancel()
+    resumeIndexRef.current = 0 // Reset resume position
     setCurrentSentenceIndex(-1)
   }
 
@@ -349,7 +372,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
   // Each sentence is rendered as its own ReactMarkdown, wrapped in a span for highlighting
   const HighlightedContent = React.useMemo(() => {
     // When not in slideshow mode with highlighting, render markdown normally
-    if (!isPlaying || !enableHighlight || currentSentenceIndex < 0 || sentenceData.length === 0) {
+    if (!isSlideshowActive || !enableHighlight || currentSentenceIndex < 0 || sentenceData.length === 0) {
       return (
         <ReactMarkdown components={baseComponents} rehypePlugins={[rehypeRaw]}>
           {activePage.content}
@@ -357,7 +380,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
       )
     }
 
-    // During slideshow with highlighting, render each sentence separately
+    // During slideshow with highlighting (playing or paused), render each sentence separately
     return (
       <div className="prose prose-slate dark:prose-invert max-w-none">
         {sentenceData.map((sentence, idx) => {
@@ -409,7 +432,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
         })}
       </div>
     )
-  }, [activePage.content, isPlaying, enableHighlight, currentSentenceIndex, sentenceData])
+  }, [activePage.content, isSlideshowActive, enableHighlight, currentSentenceIndex, sentenceData])
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full py-8 px-4">
@@ -435,11 +458,11 @@ export function ArticleView({ pages }: ArticleViewProps) {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {isPlaying ? "Pause slideshow" : "Start slideshow"}
+                      {isPlaying ? "Pause slideshow" : (isSlideshowActive ? "Resume slideshow" : "Start slideshow")}
                     </TooltipContent>
                   </Tooltip>
 
-                  {isPlaying && (
+                  {isSlideshowActive && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -455,7 +478,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
                     </Tooltip>
                   )}
 
-                  {isPlaying && (
+                  {isSlideshowActive && (
                     <>
                       <div className="w-px h-5 bg-border mx-1" />
                       <Tooltip>
@@ -501,7 +524,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
           </div>
 
           {/* Progress indicator during slideshow */}
-          {isPlaying && sentenceData.length > 0 && (
+          {isSlideshowActive && sentenceData.length > 0 && (
             <div className="mt-4">
               <div className="h-1 bg-muted rounded-full overflow-hidden">
                 <div 
@@ -511,6 +534,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Sentence {currentSentenceIndex + 1} of {sentenceData.length}
+                {!isPlaying && " (paused)"}
               </p>
             </div>
           )}
