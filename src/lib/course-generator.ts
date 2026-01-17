@@ -313,11 +313,50 @@ async function saveUploadedFiles(
 }
 
 // ============================================================================
+// RETRY LOGIC
+// ============================================================================
+
+/**
+ * Sleep for a given number of milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Check if an error is a rate limit error (429)
+ */
+function isRateLimitError(error: unknown): boolean {
+  if (error instanceof Error) {
+    return (
+      error.message.includes("429") ||
+      error.message.includes("Too Many Requests")
+    );
+  }
+  return false;
+}
+
+/**
+ * Extract retry delay from error message or use default
+ */
+function getRetryDelay(error: unknown, attempt: number): number {
+  // Try to extract retry delay from error message
+  if (error instanceof Error) {
+    const match = error.message.match(/retry in (\d+(?:\.\d+)?)/i);
+    if (match) {
+      return Math.ceil(parseFloat(match[1]) * 1000) + 1000; // Add 1 second buffer
+    }
+  }
+  // Exponential backoff: 10s, 20s, 40s, 80s...
+  return Math.min(10000 * Math.pow(2, attempt), 120000);
+}
+
+// ============================================================================
 // SECTION GENERATION
 // ============================================================================
 
 /**
- * Generate a single section using Gemini
+ * Generate a single section using Gemini with retry logic for rate limits
  */
 async function generateSection(
   courseInput: CreateCourseInput,
@@ -325,6 +364,7 @@ async function generateSection(
   totalSections: number,
   previousContext: string,
   fileContext: string,
+  maxRetries: number = 5,
 ): Promise<GeneratedSection> {
   const model = genAI.getGenerativeModel({
     model: "gemini-2.0-flash",
@@ -388,26 +428,52 @@ Use these materials as reference to ensure accuracy and relevance.`
 - No duplicate content from previous sections
 - All quiz answers must be unambiguous and correct`;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
-    const parsed = JSON.parse(responseText) as GeneratedSection;
+  let lastError: Error | null = null;
 
-    // Validate the response has required fields
-    if (
-      !parsed.sectionTitle ||
-      !parsed.article?.pages ||
-      !parsed.studyMaterial ||
-      !parsed.quiz
-    ) {
-      throw new Error("Invalid response structure from Gemini");
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text();
+      const parsed = JSON.parse(responseText) as GeneratedSection;
+
+      // Validate the response has required fields
+      if (
+        !parsed.sectionTitle ||
+        !parsed.article?.pages ||
+        !parsed.studyMaterial ||
+        !parsed.quiz
+      ) {
+        throw new Error("Invalid response structure from Gemini");
+      }
+
+      return parsed;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Check if this is a rate limit error
+      if (isRateLimitError(error)) {
+        const retryDelay = getRetryDelay(error, attempt);
+        console.log(
+          `Rate limit hit for section ${sectionNumber}. Attempt ${attempt + 1}/${maxRetries}. ` +
+            `Waiting ${Math.round(retryDelay / 1000)}s before retry...`,
+        );
+        await sleep(retryDelay);
+        continue;
+      }
+
+      // For non-rate-limit errors, throw immediately
+      console.error("Generation error for section", sectionNumber, error);
+      throw new Error(`Failed to generate section ${sectionNumber}: ${error}`);
     }
-
-    return parsed;
-  } catch (error) {
-    console.error("Generation error for section", sectionNumber, error);
-    throw new Error(`Failed to generate section ${sectionNumber}: ${error}`);
   }
+
+  // If we exhausted all retries
+  console.error("Max retries exceeded for section", sectionNumber);
+  throw new Error(
+    `Failed to generate section ${sectionNumber} after ${maxRetries} attempts. ` +
+      `Last error: ${lastError?.message || "Unknown error"}. ` +
+      `Your Gemini API quota may be exhausted. Please wait a few minutes and try again.`,
+  );
 }
 
 /**

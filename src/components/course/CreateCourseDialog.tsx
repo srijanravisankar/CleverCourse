@@ -201,14 +201,38 @@ export function CreateCourseDialog({
         }, 1500);
       } else {
         setGenerationStatus("error");
-        setGenerationError(result.error || "Failed to create course");
+        // Parse error message for user-friendly display
+        let errorMsg = result.error || "Failed to create course";
+        if (
+          errorMsg.includes("429") ||
+          errorMsg.includes("quota") ||
+          errorMsg.includes("Too Many Requests")
+        ) {
+          errorMsg =
+            "API rate limit reached. The system will retry automatically, but you may need to wait a few minutes before trying again.";
+        } else if (
+          errorMsg.includes("after") &&
+          errorMsg.includes("attempts")
+        ) {
+          errorMsg =
+            "Generation timed out due to API limits. Please wait a few minutes and try again with fewer sections.";
+        }
+        setGenerationError(errorMsg);
       }
     } catch (error) {
       console.error("Course creation error:", error);
       setGenerationStatus("error");
-      setGenerationError(
-        error instanceof Error ? error.message : "An unexpected error occurred",
-      );
+      let errorMsg =
+        error instanceof Error ? error.message : "An unexpected error occurred";
+      if (
+        errorMsg.includes("429") ||
+        errorMsg.includes("quota") ||
+        errorMsg.includes("Too Many Requests")
+      ) {
+        errorMsg =
+          "API rate limit reached. Please wait a few minutes before trying again.";
+      }
+      setGenerationError(errorMsg);
     }
   };
 
