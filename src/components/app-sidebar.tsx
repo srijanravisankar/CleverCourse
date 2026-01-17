@@ -38,6 +38,11 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useCourseStore, ViewType } from "@/store/use-course-store";
 import {
   getAllCourses,
@@ -179,7 +184,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* FIRST SIDEBAR: Course Icons (Discord Style) */}
         <Sidebar
           collapsible="none"
-          className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+          className="w-[calc(3rem+15px+1px)]! border-r"
         >
           <SidebarHeader>
             <SidebarMenuButton size="lg" className="md:h-8 md:p-0">
@@ -199,39 +204,58 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </SidebarMenuItem>
                 ) : error && courses.length === 0 ? (
                   <SidebarMenuItem>
-                    <SidebarMenuButton tooltip={error}>
-                      <AlertCircle className="size-4 text-destructive" />
-                    </SidebarMenuButton>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton>
+                          <AlertCircle className="size-4 text-destructive" />
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" align="center">
+                        {error}
+                      </TooltipContent>
+                    </Tooltip>
                   </SidebarMenuItem>
                 ) : (
                   courses.map((course, index) => (
                     <SidebarMenuItem key={course.id}>
-                      <SidebarMenuButton
-                        tooltip={course.title || course.topic}
-                        isActive={currentCourse?.id === course.id}
-                        onClick={() => handleSelectCourse(course)}
-                      >
-                        <div
-                          className={`size-4 rounded-full ${getCourseColor(
-                            index,
-                          )} ${
-                            currentCourse?.id === course.id
-                              ? "ring-2 ring-primary ring-offset-1"
-                              : ""
-                          }`}
-                        />
-                      </SidebarMenuButton>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <SidebarMenuButton
+                            isActive={currentCourse?.id === course.id}
+                            onClick={() => handleSelectCourse(course)}
+                          >
+                            <div
+                              className={`size-4 rounded-full ${getCourseColor(
+                                index,
+                              )} ${
+                                currentCourse?.id === course.id
+                                  ? "ring-2 ring-primary ring-offset-1"
+                                  : ""
+                              }`}
+                            />
+                          </SidebarMenuButton>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" align="center">
+                          {course.title || course.topic}
+                        </TooltipContent>
+                      </Tooltip>
                     </SidebarMenuItem>
                   ))
                 )}
 
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    tooltip="Create New Course"
-                    onClick={() => setShowCreateDialog(true)}
-                  >
-                    <Plus className="size-4" />
-                  </SidebarMenuButton>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <SidebarMenuButton
+                        onClick={() => setShowCreateDialog(true)}
+                      >
+                        <Plus className="size-4" />
+                      </SidebarMenuButton>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" align="center">
+                      Create New Course
+                    </TooltipContent>
+                  </Tooltip>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroup>
