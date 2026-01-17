@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { 
-  ChevronRight, 
-  BookOpen, 
-  Brain, 
-  Gamepad2, 
+import * as React from "react";
+import {
+  ChevronRight,
+  BookOpen,
+  Brain,
+  Gamepad2,
   Plus,
   Command,
   Layers,
@@ -13,13 +13,14 @@ import {
   ListChecks,
   ToggleLeft,
   Type,
-} from "lucide-react"
+  Network,
+} from "lucide-react";
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -33,8 +34,8 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
-} from "@/components/ui/sidebar"
-import { useCourseStore, ViewType } from "@/store/use-course-store"
+} from "@/components/ui/sidebar";
+import { useCourseStore, ViewType } from "@/store/use-course-store";
 
 // Mock data for the Second Sidebar
 const COURSE_DATA = {
@@ -56,19 +57,26 @@ const COURSE_DATA = {
       isActive: false,
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="icon" className="overflow-hidden *:data-[sidebar=sidebar]:flex-row" {...props}>
+    <Sidebar
+      collapsible="icon"
+      className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
+      {...props}
+    >
       {/* FIRST SIDEBAR: Course Icons (Discord Style) */}
-      <Sidebar collapsible="none" className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r">
+      <Sidebar
+        collapsible="none"
+        className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+      >
         <SidebarHeader>
-           <SidebarMenuButton size="lg" className="md:h-8 md:p-0">
-              <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                <Command className="size-4" />
-              </div>
-           </SidebarMenuButton>
+          <SidebarMenuButton size="lg" className="md:h-8 md:p-0">
+            <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+              <Command className="size-4" />
+            </div>
+          </SidebarMenuButton>
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
@@ -93,7 +101,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <Sidebar collapsible="none" className="hidden flex-1 md:flex">
         <SidebarHeader className="border-b p-4">
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">Current Course</span>
+            <span className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">
+              Current Course
+            </span>
             <div className="text-foreground text-base font-bold truncate">
               {COURSE_DATA.courseTitle}
             </div>
@@ -101,11 +111,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Curriculum</SidebarGroupLabel>
+            <div className="flex items-center justify-between px-2 mb-2">
+              <SidebarGroupLabel>Curriculum</SidebarGroupLabel>
+              <button
+                onClick={() => {
+                  const setActiveView = useCourseStore.getState().setActiveView;
+                  setActiveView("network");
+                }}
+                className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                title="View Course Network Graph"
+              >
+                <Network className="size-3.5" />
+                <span>Network</span>
+              </button>
+            </div>
             <SidebarGroupContent>
               <SidebarMenu>
                 {COURSE_DATA.sections.map((section, index) => (
-                  <CourseSectionItem key={section.id} section={section} index={index} />
+                  <CourseSectionItem
+                    key={section.id}
+                    section={section}
+                    index={index}
+                  />
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -113,21 +140,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarContent>
       </Sidebar>
     </Sidebar>
-  )
+  );
 }
 
 /**
  * MODULAR COMPONENT: CourseSectionItem
  * Handles the collapsible dropdown logic for each section.
  */
-function CourseSectionItem({ section, index }: { section: typeof COURSE_DATA.sections[0], index: number }) {
-  const setActiveView = useCourseStore((state) => state.setActiveView)
+function CourseSectionItem({
+  section,
+  index,
+}: {
+  section: (typeof COURSE_DATA.sections)[0];
+  index: number;
+}) {
+  const setActiveView = useCourseStore((state) => state.setActiveView);
 
   return (
     <Collapsible defaultOpen className="group/collapsible">
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton tooltip={section.title} className="font-semibold text-sidebar-foreground">
+          <SidebarMenuButton
+            tooltip={section.title}
+            className="font-semibold text-sidebar-foreground"
+          >
             <div className="flex size-5 items-center bg-black text-accent justify-center rounded-full text-[10px] font-bold group-hover/collapsible:bg-primary group-hover/collapsible:text-primary-foreground transition-colors">
               {index + 1}
             </div>
@@ -135,13 +171,13 @@ function CourseSectionItem({ section, index }: { section: typeof COURSE_DATA.sec
             <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
-        
+
         <CollapsibleContent>
           <SidebarMenuSub>
             {/* 1. Article (Direct Link) */}
             <SidebarMenuSubItem>
               <SidebarMenuSubButton onClick={() => setActiveView("article")}>
-                <BookOpen className="size-4 !text-green-600" />
+                <BookOpen className="size-4 text-green-600!" />
                 <span>Article</span>
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>
@@ -161,14 +197,18 @@ function CourseSectionItem({ section, index }: { section: typeof COURSE_DATA.sec
                 <CollapsibleContent>
                   <SidebarMenuSub className="ml-4 border-l">
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton onClick={() => setActiveView("mindmap")}>
-                        <Brain className="size-4 !text-pink-600" />
+                      <SidebarMenuSubButton
+                        onClick={() => setActiveView("mindmap")}
+                      >
+                        <Brain className="size-4 text-pink-600!" />
                         <span>Mind Map</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton onClick={() => setActiveView("flashcards")}>
-                        <Layers className="size-4 !text-yellow-600" />
+                      <SidebarMenuSubButton
+                        onClick={() => setActiveView("flashcards")}
+                      >
+                        <Layers className="size-4 text-yellow-600!" />
                         <span>Flashcards</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -192,20 +232,26 @@ function CourseSectionItem({ section, index }: { section: typeof COURSE_DATA.sec
                 <CollapsibleContent>
                   <SidebarMenuSub className="ml-4 border-l">
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton onClick={() => setActiveView("quiz")}>
-                        <ListChecks className="size-4 !text-purple-600" />
+                      <SidebarMenuSubButton
+                        onClick={() => setActiveView("quiz")}
+                      >
+                        <ListChecks className="size-4 text-purple-600!" />
                         <span>Multiple Choice</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton onClick={() => setActiveView("quiz")}>
-                        <ToggleLeft className="size-4 !text-amber-900" />
+                      <SidebarMenuSubButton
+                        onClick={() => setActiveView("quiz")}
+                      >
+                        <ToggleLeft className="size-4 text-amber-900!" />
                         <span>True / False</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton onClick={() => setActiveView("quiz")}>
-                        <Type className="size-4 !text-stone-600" />
+                      <SidebarMenuSubButton
+                        onClick={() => setActiveView("quiz")}
+                      >
+                        <Type className="size-4 text-stone-600!" />
                         <span>Fill Ups</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -213,10 +259,9 @@ function CourseSectionItem({ section, index }: { section: typeof COURSE_DATA.sec
                 </CollapsibleContent>
               </Collapsible>
             </SidebarMenuSubItem>
-
           </SidebarMenuSub>
         </CollapsibleContent>
       </SidebarMenuItem>
     </Collapsible>
-  )
+  );
 }
