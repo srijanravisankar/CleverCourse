@@ -733,7 +733,7 @@ function CourseSectionItem({
             </button>
 
             {/* Study Material Dropdown */}
-            <Collapsible className="group/study">
+            <Collapsible defaultOpen={true} className="group/study">
               <CollapsibleTrigger asChild>
                 <button className="flex items-center justify-between w-full px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">
                   <div className="flex items-center gap-2">
@@ -764,7 +764,7 @@ function CourseSectionItem({
             </Collapsible>
 
             {/* Quiz Dropdown */}
-            <Collapsible className="group/quiz">
+            <Collapsible defaultOpen={true} className="group/quiz">
               <CollapsibleTrigger asChild>
                 <button className="flex items-center justify-between w-full px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">
                   <div className="flex items-center gap-2">
