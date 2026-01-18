@@ -5,6 +5,7 @@
  *
  * These server actions provide the interface between the frontend
  * and the database for course-related operations.
+ * All course operations are scoped to the current authenticated user.
  */
 
 import {
@@ -27,16 +28,23 @@ import type {
   CreateCourseInput,
   GeneratedSectionContent,
 } from "@/db/types";
+import { getCurrentUserId } from "./auth";
 
 // ============================================================================
 // COURSE ACTIONS
 // ============================================================================
 
 /**
- * Create a new course
+ * Create a new course for the current user
  */
 export async function createCourse(input: CreateCourseInput): Promise<Course> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+
   const course = await courseRepository.create({
+    userId,
     title: `Course: ${input.topic}`,
     topic: input.topic,
     level: input.level,
@@ -55,65 +63,126 @@ export async function createCourse(input: CreateCourseInput): Promise<Course> {
 }
 
 /**
- * Get all courses
+ * Get all courses for the current user
  */
 export async function getAllCourses(): Promise<Course[]> {
-  return courseRepository.findAll();
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return [];
+  }
+  return courseRepository.findByUserId(userId);
 }
 
 /**
- * Get a course by ID
+ * Get a course by ID (only if owned by current user)
  */
 export async function getCourseById(id: string): Promise<Course | null> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return null;
+  }
+
   const course = await courseRepository.findById(id);
-  return course ?? null;
+  if (!course || course.userId !== userId) {
+    return null;
+  }
+  return course;
 }
 
 /**
- * Get a course with all its sections
+ * Get a course with all its sections (only if owned by current user)
  */
 export async function getCourseWithSections(
   id: string,
 ): Promise<CourseWithSections | null> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return null;
+  }
+
   const course = await courseRepository.findByIdWithSections(id);
-  return course ?? null;
+  if (!course || course.userId !== userId) {
+    return null;
+  }
+  return course;
 }
 
 /**
- * Get the full course with all content
+ * Get the full course with all content (only if owned by current user)
  */
 export async function getFullCourse(id: string): Promise<FullCourse | null> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return null;
+  }
+
   const course = await courseRepository.findByIdFull(id);
-  return course ?? null;
+  if (!course || course.userId !== userId) {
+    return null;
+  }
+  return course;
 }
 
 /**
- * Update course status
+ * Update course status (only if owned by current user)
  */
 export async function updateCourseStatus(
   id: string,
   status: Course["status"],
 ): Promise<Course | null> {
-  const course = await courseRepository.updateStatus(id, status);
-  return course ?? null;
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return null;
+  }
+
+  const course = await courseRepository.findById(id);
+  if (!course || course.userId !== userId) {
+    return null;
+  }
+
+  const updated = await courseRepository.updateStatus(id, status);
+  return updated ?? null;
 }
 
 /**
- * Update course title and description
+ * Update course title and description (only if owned by current user)
  */
 export async function updateCourseDetails(
   id: string,
   data: { title?: string; description?: string },
 ): Promise<Course | null> {
-  const course = await courseRepository.update(id, data);
-  return course ?? null;
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return null;
+  }
+
+  const course = await courseRepository.findById(id);
+  if (!course || course.userId !== userId) {
+    return null;
+  }
+
+  const updated = await courseRepository.update(id, data);
+  return updated ?? null;
 }
 
 /**
- * Delete a course
+ * Delete a course (only if owned by current user)
  */
-export async function deleteCourse(id: string): Promise<void> {
+export async function deleteCourse(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const course = await courseRepository.findById(id);
+  if (!course || course.userId !== userId) {
+    return { success: false, error: "Course not found or access denied" };
+  }
+
   await courseRepository.delete(id);
+  return { success: true };
 }
 
 /**

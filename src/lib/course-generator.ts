@@ -30,6 +30,7 @@ import {
 import type { Course, CreateCourseInput, MindMapData } from "@/db/types";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { getCurrentUserId } from "@/app/actions/auth";
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -517,10 +518,10 @@ async function persistSection(
 ): Promise<string> {
   // Use the raw sqlite instance for transaction
   const { sqlite } = await import("@/db/index");
-  
+
   // Prepare all the data before starting the transaction
   const sectionId = crypto.randomUUID();
-  
+
   const articlePagesData = content.article.pages.map((page, index) => ({
     id: crypto.randomUUID(),
     sectionId,
@@ -529,11 +530,13 @@ async function persistSection(
     content: page.content,
   }));
 
-  const mindMapData = content.studyMaterial.mindMap ? {
-    id: crypto.randomUUID(),
-    sectionId,
-    data: JSON.stringify(content.studyMaterial.mindMap),
-  } : null;
+  const mindMapData = content.studyMaterial.mindMap
+    ? {
+        id: crypto.randomUUID(),
+        sectionId,
+        data: JSON.stringify(content.studyMaterial.mindMap),
+      }
+    : null;
 
   const flashcardsData = content.studyMaterial.flashcards.map((card) => ({
     id: crypto.randomUUID(),
@@ -567,13 +570,25 @@ async function persistSection(
 
   // Execute all inserts in a single transaction for speed
   const now = new Date().getTime(); // SQLite stores timestamps as integers
-  
+
   sqlite.transaction(() => {
     // Insert section (course_sections has updated_at)
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO course_sections (id, course_id, section_number, title, previous_context, is_completed, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, 0, ?, ?)
-    `).run(sectionId, courseId, sectionNumber, content.sectionTitle, previousContext, now, now);
+    `,
+      )
+      .run(
+        sectionId,
+        courseId,
+        sectionNumber,
+        content.sectionTitle,
+        previousContext,
+        now,
+        now,
+      );
 
     // Insert article pages (no updated_at column)
     const insertArticle = sqlite.prepare(`
@@ -581,15 +596,26 @@ async function persistSection(
       VALUES (?, ?, ?, ?, ?, ?)
     `);
     for (const page of articlePagesData) {
-      insertArticle.run(page.id, page.sectionId, page.pageNumber, page.pageTitle, page.content, now);
+      insertArticle.run(
+        page.id,
+        page.sectionId,
+        page.pageNumber,
+        page.pageTitle,
+        page.content,
+        now,
+      );
     }
 
     // Insert mind map (no updated_at column)
     if (mindMapData) {
-      sqlite.prepare(`
+      sqlite
+        .prepare(
+          `
         INSERT INTO mind_maps (id, section_id, data, created_at)
         VALUES (?, ?, ?, ?)
-      `).run(mindMapData.id, mindMapData.sectionId, mindMapData.data, now);
+      `,
+        )
+        .run(mindMapData.id, mindMapData.sectionId, mindMapData.data, now);
     }
 
     // Insert flashcards (no updated_at column)
@@ -607,7 +633,14 @@ async function persistSection(
       VALUES (?, ?, ?, ?, ?, ?)
     `);
     for (const mcq of mcqsData) {
-      insertMcq.run(mcq.id, mcq.sectionId, mcq.question, mcq.options, mcq.answer, now);
+      insertMcq.run(
+        mcq.id,
+        mcq.sectionId,
+        mcq.question,
+        mcq.options,
+        mcq.answer,
+        now,
+      );
     }
 
     // Insert True/False (no updated_at column)
@@ -616,7 +649,14 @@ async function persistSection(
       VALUES (?, ?, ?, ?, ?, ?)
     `);
     for (const tf of trueFalseData) {
-      insertTf.run(tf.id, tf.sectionId, tf.question, tf.answer, tf.explanation, now);
+      insertTf.run(
+        tf.id,
+        tf.sectionId,
+        tf.question,
+        tf.answer,
+        tf.explanation,
+        now,
+      );
     }
 
     // Insert Fill-ups (no updated_at column)
@@ -625,7 +665,13 @@ async function persistSection(
       VALUES (?, ?, ?, ?, ?)
     `);
     for (const fill of fillUpsData) {
-      insertFill.run(fill.id, fill.sectionId, fill.sentence, fill.missingWord, now);
+      insertFill.run(
+        fill.id,
+        fill.sectionId,
+        fill.sentence,
+        fill.missingWord,
+        now,
+      );
     }
   })();
 
@@ -648,8 +694,15 @@ export async function generateFirstSection(
   let courseId: string | undefined;
 
   try {
+    // Get the current user ID from the session
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "Not authenticated. Please log in." };
+    }
+
     // Step 1: Create the course record
     const course = await courseRepository.create({
+      userId,
       title: input.topic,
       topic: input.topic,
       description: `A ${input.level} level course on ${input.topic} designed to help you ${input.goal}.`,
@@ -806,8 +859,15 @@ export async function generateAndCreateCourse(
   let courseId: string | undefined;
 
   try {
+    // Get the current user ID from the session
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "Not authenticated. Please log in." };
+    }
+
     // Step 1: Create the course record
     const course = await courseRepository.create({
+      userId,
       title: input.topic,
       topic: input.topic,
       description: `A ${input.level} level course on ${input.topic} designed to help you ${input.goal}.`,

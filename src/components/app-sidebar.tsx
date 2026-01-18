@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   ChevronRight,
   BookOpen,
@@ -25,6 +26,8 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
+import { useAuthStore } from "@/store/use-auth-store";
+import { logOut } from "@/app/actions/auth";
 
 import { CreateCourseDialog } from "@/components/course/CreateCourseDialog";
 import {
@@ -91,8 +94,12 @@ function getCourseInitials(title: string): string {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
+  const router = useRouter();
   const [showCreateDialog, setShowCreateDialog] = React.useState(false);
   const [courseSidebarOpen, setCourseSidebarOpen] = React.useState(true);
+
+  // Auth state
+  const { user, reset: resetAuth } = useAuthStore();
 
   const {
     courses,
@@ -117,6 +124,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
     getCachedSectionContent,
     cacheSectionContent,
   } = useCourseStore();
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await logOut();
+      resetAuth();
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   // Fetch courses on mount
   React.useEffect(() => {
@@ -168,14 +187,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
   // Handle section selection
   const handleSelectSection = async (section: CourseSection) => {
     setActiveSectionId(section.id);
-    
+
     // Check cache first - if we have the content, use it immediately without loading state
     const cached = getCachedSectionContent(section.id);
     if (cached) {
       setCurrentSection(cached);
       return;
     }
-    
+
     // Not in cache, need to fetch from server
     setIsLoadingSection(true);
     try {
@@ -211,7 +230,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
             if (sectionWithContent) {
               // Cache the content so clicking on this section is instant
               cacheSectionContent(sectionWithContent);
-              
+
               addSection({
                 id: sectionWithContent.id,
                 courseId: sectionWithContent.courseId,
@@ -245,7 +264,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     },
-    [updatePendingSection, addSection, removePendingSection, cacheSectionContent],
+    [
+      updatePendingSection,
+      addSection,
+      removePendingSection,
+      cacheSectionContent,
+    ],
   );
 
   // Handle course creation success
@@ -398,7 +422,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent side="right" align="end" className="w-48">
-                  <DropdownMenuLabel>John Doe</DropdownMenuLabel>
+                  <DropdownMenuLabel className="truncate">
+                    {user?.name || "User"}
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
 
                   <DropdownMenuLabel className="text-xs font-normal text-muted-foreground py-1.5">
@@ -414,7 +440,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-red-400">
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 cursor-pointer text-red-400"
+                  >
                     <LogOut className="size-4" />
                     <span>Sign Out</span>
                   </DropdownMenuItem>

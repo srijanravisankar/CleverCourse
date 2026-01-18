@@ -4,6 +4,7 @@ import "./globals.css";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { ChatTrigger } from "@/components/chat/ChatTrigger";
 import { SelectionPopover } from "@/components/chat/SelectionPopover";
+import { AuthProvider } from "@/components/auth-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,10 +32,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
-        <ChatPanel />
-        <ChatTrigger />
-        <SelectionPopover />
+        <AuthProvider>
+          {children}
+          <ChatPanel />
+          <ChatTrigger />
+          <SelectionPopover />
+        </AuthProvider>
       </body>
     </html>
   );
