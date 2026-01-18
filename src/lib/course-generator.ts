@@ -517,14 +517,14 @@ async function persistSection(
   previousContext: string,
 ): Promise<string> {
   const { db } = await import("@/db/index");
-  const { 
-    courseSections, 
-    articlePages, 
-    mindMaps, 
-    flashcards, 
-    mcqQuestions, 
-    trueFalseQuestions, 
-    fillUpQuestions 
+  const {
+    courseSections,
+    articlePages,
+    mindMaps,
+    flashcards,
+    mcqQuestions,
+    trueFalseQuestions,
+    fillUpQuestions,
   } = await import("@/db/schema");
 
   // Prepare all the data
@@ -553,7 +553,7 @@ async function persistSection(
         pageTitle: page.pageTitle,
         content: page.content,
         createdAt: now,
-      }))
+      })),
     );
   }
 
@@ -576,7 +576,7 @@ async function persistSection(
         front: card.front,
         back: card.back,
         createdAt: now,
-      }))
+      })),
     );
   }
 
@@ -590,7 +590,7 @@ async function persistSection(
         options: JSON.stringify(mcq.options),
         answer: mcq.answer,
         createdAt: now,
-      }))
+      })),
     );
   }
 
@@ -604,7 +604,7 @@ async function persistSection(
         answer: tf.answer,
         explanation: tf.explanation,
         createdAt: now,
-      }))
+      })),
     );
   }
 
@@ -617,7 +617,7 @@ async function persistSection(
         sentence: fill.sentence,
         missingWord: fill.missingWord,
         createdAt: now,
-      }))
+      })),
     );
   }
 
