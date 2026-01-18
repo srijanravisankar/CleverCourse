@@ -335,6 +335,158 @@ export const userProgress = sqliteTable("user_progress", {
 });
 
 // ============================================================================
+// GAMIFICATION: USER STATS TABLE
+// ============================================================================
+export const userGamification = sqliteTable("user_gamification", {
+  id: text("id").primaryKey(), // UUID
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+
+  // XP & Leveling
+  xpTotal: integer("xp_total").notNull().default(0),
+  currentLevel: integer("current_level").notNull().default(1),
+  
+  // Streak System
+  currentStreak: integer("current_streak").notNull().default(0),
+  longestStreak: integer("longest_streak").notNull().default(0),
+  lastActivityDate: integer("last_activity_date", { mode: "timestamp" }),
+  
+  // Currency (Sparks) - earned through XP, used for streak freezes etc.
+  sparks: integer("sparks").notNull().default(0),
+  
+  // Streak Freeze mechanic (ADHD-friendly forgiveness)
+  freezesAvailable: integer("freezes_available").notNull().default(1), // Start with 1 free freeze
+  freezeUsedToday: integer("freeze_used_today", { mode: "boolean" }).notNull().default(false),
+  
+  // Stats for achievements
+  totalQuizzesPassed: integer("total_quizzes_passed").notNull().default(0),
+  totalSectionsCompleted: integer("total_sections_completed").notNull().default(0),
+  totalCoursesCompleted: integer("total_courses_completed").notNull().default(0),
+  totalFlashcardsReviewed: integer("total_flashcards_reviewed").notNull().default(0),
+  perfectQuizzes: integer("perfect_quizzes").notNull().default(0), // 100% score quizzes
+  
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+// ============================================================================
+// GAMIFICATION: ACHIEVEMENTS TABLE
+// ============================================================================
+export const achievements = sqliteTable("achievements", {
+  id: text("id").primaryKey(), // UUID or predefined ID like "first_course"
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  iconName: text("icon_name").notNull(), // Lucide icon name e.g., "Trophy", "Flame", "Star"
+  
+  // Achievement category for UI grouping
+  category: text("category", {
+    enum: ["learning", "streak", "mastery", "social", "special"],
+  }).notNull().default("learning"),
+  
+  // Rarity affects visual styling
+  rarity: text("rarity", {
+    enum: ["common", "rare", "epic", "legendary"],
+  }).notNull().default("common"),
+  
+  // XP reward when unlocked
+  xpReward: integer("xp_reward").notNull().default(50),
+  
+  // Sparks reward when unlocked
+  sparksReward: integer("sparks_reward").notNull().default(10),
+  
+  // Condition type for programmatic checking
+  conditionType: text("condition_type", {
+    enum: [
+      "sections_completed",
+      "courses_completed", 
+      "streak_days",
+      "quizzes_passed",
+      "perfect_quizzes",
+      "flashcards_reviewed",
+      "xp_earned",
+      "level_reached",
+      "special",
+    ],
+  }).notNull(),
+  
+  // Threshold value for the condition
+  conditionValue: integer("condition_value").notNull().default(1),
+  
+  // Hidden achievements (revealed only when unlocked)
+  isHidden: integer("is_hidden", { mode: "boolean" }).notNull().default(false),
+  
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+// ============================================================================
+// GAMIFICATION: USER ACHIEVEMENTS (Junction Table)
+// ============================================================================
+export const userAchievements = sqliteTable("user_achievements", {
+  id: text("id").primaryKey(), // UUID
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  achievementId: text("achievement_id")
+    .notNull()
+    .references(() => achievements.id, { onDelete: "cascade" }),
+  
+  // When the achievement was unlocked
+  unlockedAt: integer("unlocked_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  
+  // Whether user has seen/acknowledged the achievement
+  isSeen: integer("is_seen", { mode: "boolean" }).notNull().default(false),
+});
+
+// ============================================================================
+// GAMIFICATION: XP TRANSACTIONS (Audit Log)
+// ============================================================================
+export const xpTransactions = sqliteTable("xp_transactions", {
+  id: text("id").primaryKey(), // UUID
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  
+  // XP amount (can be negative for penalties, though we won't use that)
+  amount: integer("amount").notNull(),
+  
+  // Bonus XP from variable rewards (ADHD dopamine hit!)
+  bonusAmount: integer("bonus_amount").notNull().default(0),
+  
+  // Reason for the XP
+  reason: text("reason", {
+    enum: [
+      "quiz_completed",
+      "section_completed",
+      "course_completed",
+      "flashcard_reviewed",
+      "streak_bonus",
+      "achievement_unlocked",
+      "perfect_quiz",
+      "daily_login",
+      "level_up_bonus",
+    ],
+  }).notNull(),
+  
+  // Optional reference to what triggered this
+  referenceId: text("reference_id"), // e.g., sectionId, courseId
+  referenceType: text("reference_type"), // e.g., "section", "course", "quiz"
+  
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+// ============================================================================
 // RELATIONS
 // ============================================================================
 
@@ -456,5 +608,38 @@ export const userProgressRelations = relations(userProgress, ({ one }) => ({
   course: one(courses, {
     fields: [userProgress.courseId],
     references: [courses.id],
+  }),
+}));
+
+// ============================================================================
+// GAMIFICATION RELATIONS
+// ============================================================================
+
+export const userGamificationRelations = relations(userGamification, ({ one }) => ({
+  user: one(users, {
+    fields: [userGamification.userId],
+    references: [users.id],
+  }),
+}));
+
+export const achievementsRelations = relations(achievements, ({ many }) => ({
+  userAchievements: many(userAchievements),
+}));
+
+export const userAchievementsRelations = relations(userAchievements, ({ one }) => ({
+  user: one(users, {
+    fields: [userAchievements.userId],
+    references: [users.id],
+  }),
+  achievement: one(achievements, {
+    fields: [userAchievements.achievementId],
+    references: [achievements.id],
+  }),
+}));
+
+export const xpTransactionsRelations = relations(xpTransactions, ({ one }) => ({
+  user: one(users, {
+    fields: [xpTransactions.userId],
+    references: [users.id],
   }),
 }));

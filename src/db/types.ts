@@ -13,6 +13,10 @@ import type {
   chatMessages,
   uploadedFiles,
   userProgress,
+  userGamification,
+  achievements,
+  userAchievements,
+  xpTransactions,
 } from "./schema";
 
 // ============================================================================
@@ -32,6 +36,10 @@ export type ChatConversation = InferSelectModel<typeof chatConversations>;
 export type ChatMessage = InferSelectModel<typeof chatMessages>;
 export type UploadedFile = InferSelectModel<typeof uploadedFiles>;
 export type UserProgress = InferSelectModel<typeof userProgress>;
+export type UserGamification = InferSelectModel<typeof userGamification>;
+export type Achievement = InferSelectModel<typeof achievements>;
+export type UserAchievement = InferSelectModel<typeof userAchievements>;
+export type XpTransaction = InferSelectModel<typeof xpTransactions>;
 
 // ============================================================================
 // INSERT TYPES (for creating new records)
@@ -50,6 +58,10 @@ export type NewChatConversation = InferInsertModel<typeof chatConversations>;
 export type NewChatMessage = InferInsertModel<typeof chatMessages>;
 export type NewUploadedFile = InferInsertModel<typeof uploadedFiles>;
 export type NewUserProgress = InferInsertModel<typeof userProgress>;
+export type NewUserGamification = InferInsertModel<typeof userGamification>;
+export type NewAchievement = InferInsertModel<typeof achievements>;
+export type NewUserAchievement = InferInsertModel<typeof userAchievements>;
+export type NewXpTransaction = InferInsertModel<typeof xpTransactions>;
 
 // ============================================================================
 // ENUM TYPES
@@ -204,4 +216,80 @@ export interface ProgressUpdate {
   quizzesTaken?: number;
   quizScore?: number;
   timeSpent?: number;
+}
+
+// ============================================================================
+// GAMIFICATION TYPES
+// ============================================================================
+
+export type AchievementCategory = "learning" | "streak" | "mastery" | "social" | "special";
+export type AchievementRarity = "common" | "rare" | "epic" | "legendary";
+export type AchievementConditionType = 
+  | "sections_completed"
+  | "courses_completed"
+  | "streak_days"
+  | "quizzes_passed"
+  | "perfect_quizzes"
+  | "flashcards_reviewed"
+  | "xp_earned"
+  | "level_reached"
+  | "special";
+
+export type XpReason =
+  | "quiz_completed"
+  | "section_completed"
+  | "course_completed"
+  | "flashcard_reviewed"
+  | "streak_bonus"
+  | "achievement_unlocked"
+  | "perfect_quiz"
+  | "daily_login"
+  | "level_up_bonus";
+
+/**
+ * Result of awarding XP to a user
+ */
+export interface AwardXpResult {
+  success: boolean;
+  xpAwarded: number;
+  bonusXp: number;
+  newTotal: number;
+  leveledUp: boolean;
+  newLevel: number;
+  previousLevel: number;
+  xpForCurrentLevel: number;
+  xpForNextLevel: number;
+  unlockedAchievements: Achievement[];
+  streakUpdated: boolean;
+  currentStreak: number;
+}
+
+/**
+ * User's complete gamification stats for display
+ */
+export interface GamificationStats {
+  xpTotal: number;
+  currentLevel: number;
+  xpForCurrentLevel: number;
+  xpForNextLevel: number;
+  xpProgress: number; // 0-100 percentage
+  currentStreak: number;
+  longestStreak: number;
+  sparks: number;
+  freezesAvailable: number;
+  freezeUsedToday: boolean;
+  totalSectionsCompleted: number;
+  totalQuizzesPassed: number;
+  totalCoursesCompleted: number;
+  perfectQuizzes: number;
+}
+
+/**
+ * Achievement with unlock status for display
+ */
+export interface AchievementWithStatus extends Achievement {
+  isUnlocked: boolean;
+  unlockedAt: Date | null;
+  progress: number; // 0-100 percentage towards unlock
+  currentValue: number; // Current progress value
 }
