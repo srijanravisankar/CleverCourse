@@ -435,7 +435,7 @@ Use these materials as reference to ensure accuracy and relevance.`
     try {
       const result = await model.generateContent(prompt);
       const responseText = result.response.text();
-      
+
       let parsed: GeneratedSection;
       try {
         parsed = JSON.parse(responseText) as GeneratedSection;
@@ -443,12 +443,14 @@ Use these materials as reference to ensure accuracy and relevance.`
         // JSON parsing failed - this is usually due to truncation
         console.error(
           `JSON parse error for section ${sectionNumber} (attempt ${attempt + 1}/${maxRetries}):`,
-          parseError instanceof Error ? parseError.message : parseError
+          parseError instanceof Error ? parseError.message : parseError,
         );
-        
+
         // If we have more retries, try again
         if (attempt < maxRetries - 1) {
-          console.log(`Retrying section ${sectionNumber} due to malformed JSON...`);
+          console.log(
+            `Retrying section ${sectionNumber} due to malformed JSON...`,
+          );
           await sleep(2000); // Wait 2 seconds before retry
           continue;
         }
@@ -479,7 +481,7 @@ Use these materials as reference to ensure accuracy and relevance.`
         await sleep(retryDelay);
         continue;
       }
-      
+
       // Check if this is a JSON parse error (handled above but just in case)
       if (error instanceof SyntaxError) {
         if (attempt < maxRetries - 1) {
@@ -591,7 +593,159 @@ async function persistSection(
 // ============================================================================
 
 /**
- * Generate and create a complete course
+ * Generate the first section and create course record
+ * Returns immediately after first section is ready so user can start learning
+ */
+export async function generateFirstSection(
+  input: CreateCourseInput,
+  files: FileUpload[] = [],
+): Promise<{ success: boolean; courseId?: string; error?: string }> {
+  let courseId: string | undefined;
+
+  try {
+    // Step 1: Create the course record
+    const course = await courseRepository.create({
+      title: input.topic,
+      topic: input.topic,
+      description: `A ${input.level} level course on ${input.topic} designed to help you ${input.goal}.`,
+      level: input.level,
+      goal: input.goal,
+      tone: input.tone,
+      targetAudience: input.targetAudience ?? null,
+      prerequisites: input.prerequisites ?? null,
+      sectionCount: input.sectionCount,
+      timeCommitment: input.timeCommitment,
+      startDate: input.startDate ?? null,
+      endDate: input.endDate ?? null,
+      status: "generating",
+    });
+    courseId = course.id;
+
+    // Step 2: Save uploaded files and extract text
+    const fileContexts = await saveUploadedFiles(courseId, files);
+    const fileContext = fileContexts.join("\n\n").slice(0, 10000);
+
+    // Step 3: Generate ONLY the first section
+    console.log(`Generating section 1 of ${input.sectionCount}...`);
+
+    const sectionContent = await generateSection(
+      input,
+      1,
+      input.sectionCount,
+      "",
+      fileContext,
+    );
+
+    // Persist first section to database
+    await persistSection(courseId, 1, sectionContent, "");
+
+    console.log(`First section of course ${courseId} generated successfully!`);
+    return { success: true, courseId };
+  } catch (error) {
+    console.error("First section generation failed:", error);
+
+    // Mark course as failed if it was created
+    if (courseId) {
+      await courseRepository.update(courseId, {
+        status: "draft",
+        description: `Generation failed: ${error}`,
+      });
+    }
+
+    return {
+      success: false,
+      courseId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Generate a specific section of an existing course (for progressive loading)
+ */
+export async function generateNextSection(
+  courseId: string,
+  sectionNumber: number,
+): Promise<{ success: boolean; sectionId?: string; error?: string }> {
+  try {
+    // Get the course
+    const course = await courseRepository.findById(courseId);
+    if (!course) {
+      return { success: false, error: "Course not found" };
+    }
+
+    // Get existing sections for context
+    const sections = await sectionRepository.findByCourseId(courseId);
+    const previousSections = sections.filter(
+      (s) => s.sectionNumber < sectionNumber,
+    );
+    const previousContext = previousSections
+      .map((s) => `Section ${s.sectionNumber}: ${s.title}`)
+      .join("\n");
+
+    // Get file context
+    const files = await fileRepository.findByCourseId(courseId);
+    const fileContext = files
+      .filter((f) => f.extractedText)
+      .map((f) => `=== ${f.originalName} ===\n${f.extractedText}`)
+      .join("\n\n")
+      .slice(0, 10000);
+
+    // Build input from course data
+    const input: CreateCourseInput = {
+      topic: course.topic,
+      level: course.level as CreateCourseInput["level"],
+      goal: course.goal,
+      tone: course.tone as CreateCourseInput["tone"],
+      targetAudience: course.targetAudience ?? undefined,
+      prerequisites: course.prerequisites ?? undefined,
+      sectionCount: course.sectionCount,
+      timeCommitment: course.timeCommitment,
+    };
+
+    console.log(
+      `Generating section ${sectionNumber} of ${course.sectionCount}...`,
+    );
+
+    const sectionContent = await generateSection(
+      input,
+      sectionNumber,
+      course.sectionCount,
+      previousContext,
+      fileContext,
+    );
+
+    const sectionSummary = await persistSection(
+      courseId,
+      sectionNumber,
+      sectionContent,
+      previousContext,
+    );
+
+    // Check if this was the last section
+    const updatedSections = await sectionRepository.findByCourseId(courseId);
+    if (updatedSections.length >= course.sectionCount) {
+      await courseRepository.updateStatus(courseId, "active");
+      console.log(`Course ${courseId} fully generated!`);
+    }
+
+    // Get the created section to return its ID
+    const createdSection = updatedSections.find(
+      (s) => s.sectionNumber === sectionNumber,
+    );
+
+    return { success: true, sectionId: createdSection?.id };
+  } catch (error) {
+    console.error(`Section ${sectionNumber} generation failed:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Generate and create a complete course (legacy - generates all at once)
  *
  * This is the main entry point for course creation:
  * 1. Creates the course record

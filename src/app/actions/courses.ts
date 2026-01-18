@@ -340,3 +340,50 @@ export async function resetSectionQuizzes(sectionId: string) {
     ...fillUps.map((q) => fillUpRepository.resetAttempt(q.id)),
   ]);
 }
+
+// ============================================================================
+// PROGRESSIVE SECTION GENERATION ACTIONS
+// ============================================================================
+
+import {
+  generateNextSection as generateNextSectionService,
+  regenerateSection as regenerateSectionService,
+} from "@/lib/course-generator";
+
+/**
+ * Generate the next section of a course progressively
+ */
+export async function generateCourseSection(
+  courseId: string,
+  sectionNumber: number,
+): Promise<{ success: boolean; sectionId?: string; error?: string }> {
+  return generateNextSectionService(courseId, sectionNumber);
+}
+
+/**
+ * Retry generating a failed section
+ */
+export async function retryFailedSection(
+  courseId: string,
+  sectionNumber: number,
+): Promise<{ success: boolean; sectionId?: string; error?: string }> {
+  return generateNextSectionService(courseId, sectionNumber);
+}
+
+/**
+ * Delete a failed section placeholder (just removes from pending, no DB action needed)
+ */
+export async function deleteFailedSection(
+  courseId: string,
+  sectionNumber: number,
+): Promise<{ success: boolean }> {
+  // Update course section count
+  const course = await courseRepository.findById(courseId);
+  if (course && course.sectionCount > sectionNumber) {
+    await courseRepository.update(courseId, {
+      sectionCount: sectionNumber - 1,
+      status: "active",
+    });
+  }
+  return { success: true };
+}
