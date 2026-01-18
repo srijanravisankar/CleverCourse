@@ -7,6 +7,7 @@ import type {
 
 // Update the ViewType union
 export type ViewType =
+  | "home"
   | "article"
   | "flashcards"
   | "mindmap"
@@ -63,7 +64,9 @@ interface CourseState {
 
   // SECTION CONTENT CACHE - stores full content for sections we've already loaded
   sectionContentCache: Map<string, CourseSectionWithContent>;
-  getCachedSectionContent: (sectionId: string) => CourseSectionWithContent | undefined;
+  getCachedSectionContent: (
+    sectionId: string,
+  ) => CourseSectionWithContent | undefined;
   cacheSectionContent: (section: CourseSectionWithContent) => void;
   clearSectionContentCache: () => void;
 

@@ -32,14 +32,17 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { markContentCompleted } from "@/app/actions/progress";
 
 interface ArticlePage {
+  id?: string;
   pageTitle: string;
   content: string;
 }
 
 interface ArticleViewProps {
   pages: ArticlePage[];
+  courseId?: string;
   sectionId?: string;
   onArticleComplete?: () => void;
 }
@@ -198,6 +201,7 @@ function splitMarkdownIntoSentences(
 
 export function ArticleView({
   pages,
+  courseId,
   sectionId,
   onArticleComplete,
 }: ArticleViewProps) {
@@ -224,6 +228,43 @@ export function ArticleView({
   // Check if all pages are completed
   const allPagesCompleted = completedPages.size === totalPages;
   const isCurrentPageCompleted = completedPages.has(currentPage);
+
+  // Handle marking a page as complete
+  const handleMarkPageComplete = React.useCallback(async () => {
+    if (isCurrentPageCompleted) return;
+
+    setCompletedPages((prev) => new Set([...prev, currentPage]));
+    setShowXpBadge(true);
+    setTimeout(() => setShowXpBadge(false), 1500);
+
+    // Save to database
+    if (courseId && sectionId && activePage.id) {
+      try {
+        await markContentCompleted(
+          courseId,
+          sectionId,
+          "article",
+          activePage.id,
+        );
+      } catch (error) {
+        console.error("Error marking article complete:", error);
+      }
+    }
+
+    // Check if all pages are now completed
+    if (completedPages.size + 1 === totalPages) {
+      onArticleComplete?.();
+    }
+  }, [
+    currentPage,
+    isCurrentPageCompleted,
+    courseId,
+    sectionId,
+    activePage.id,
+    completedPages.size,
+    totalPages,
+    onArticleComplete,
+  ]);
 
   // Extract sentences when page changes - now with markdown preserved
   React.useEffect(() => {
@@ -823,17 +864,7 @@ export function ArticleView({
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => {
-                  // Mark current page as completed
-                  setCompletedPages((prev) => new Set([...prev, currentPage]));
-                  setShowXpBadge(true);
-                  setTimeout(() => setShowXpBadge(false), 1500);
-
-                  // Call the callback to award XP
-                  if (onArticleComplete) {
-                    onArticleComplete();
-                  }
-                }}
+                onClick={handleMarkPageComplete}
                 className="gap-2 bg-green-600 hover:bg-green-700"
               >
                 <CheckCircle className="size-4" />

@@ -664,3 +664,51 @@ export const xpTransactionsRelations = relations(xpTransactions, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// ============================================================================
+// USER CONTENT COMPLETIONS TABLE (tracks what each user has completed)
+// ============================================================================
+export const userContentCompletions = sqliteTable("user_content_completions", {
+  id: text("id").primaryKey(), // UUID
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  courseId: text("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  sectionId: text("section_id")
+    .notNull()
+    .references(() => courseSections.id, { onDelete: "cascade" }),
+
+  // Content type and ID
+  contentType: text("content_type", {
+    enum: ["article", "flashcard", "mindmap", "mcq", "truefalse", "fillup"],
+  }).notNull(),
+  contentId: text("content_id").notNull(), // The ID of the specific content item
+
+  // Completion data
+  isCorrect: integer("is_correct", { mode: "boolean" }), // For quiz items
+  xpAwarded: integer("xp_awarded").notNull().default(0),
+
+  completedAt: integer("completed_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export const userContentCompletionsRelations = relations(
+  userContentCompletions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userContentCompletions.userId],
+      references: [users.id],
+    }),
+    course: one(courses, {
+      fields: [userContentCompletions.courseId],
+      references: [courses.id],
+    }),
+    section: one(courseSections, {
+      fields: [userContentCompletions.sectionId],
+      references: [courseSections.id],
+    }),
+  }),
+);

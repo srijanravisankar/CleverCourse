@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Zap, Brain } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
+import { markContentCompleted } from "@/app/actions/progress";
 
 // Required styles
 import "@xyflow/react/dist/style.css";
@@ -71,18 +72,22 @@ interface MindMapProps {
     }>;
   };
   mindmapId?: string;
+  courseId?: string;
+  sectionId?: string;
   onMindmapReviewed?: () => void;
 }
 
 export function MindMap({
   data: mindMapData,
   mindmapId,
+  courseId,
+  sectionId,
   onMindmapReviewed,
 }: MindMapProps) {
   const [isReviewed, setIsReviewed] = useState(false);
   const [showXpBadge, setShowXpBadge] = useState(false);
 
-  const handleMarkReviewed = () => {
+  const handleMarkReviewed = async () => {
     if (!isReviewed) {
       setIsReviewed(true);
       setShowXpBadge(true);
@@ -95,6 +100,15 @@ export function MindMap({
         origin: { y: 0.7 },
         colors: ["#4ECDC4", "#45B7D1", "#FFD700"],
       });
+
+      // Save to database
+      if (courseId && sectionId && mindmapId) {
+        try {
+          await markContentCompleted(courseId, sectionId, "mindmap", mindmapId);
+        } catch (error) {
+          console.error("Error marking mindmap complete:", error);
+        }
+      }
 
       onMindmapReviewed?.();
     }

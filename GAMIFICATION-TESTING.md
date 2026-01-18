@@ -18,7 +18,62 @@ Welcome to the CleverCourse gamification engine! This guide will help you test a
 
 ---
 
+## ⚠️ IMPORTANT: Persistent Progress System
+
+**All progress is now saved to the database!**
+
+- When you mark articles, flashcards, quizzes as complete, it's saved to your account
+- Progress persists across page refreshes and sessions
+- Each user has their own progress tracking per course
+- Use the **RESET PROGRESS** button in Course Home to start fresh
+
+---
+
 ## 🎯 Features to Test
+
+### 0. 🏠 Course Home - Live Analytics Dashboard
+
+**Location:** Click the purple "Course Home" button in the sidebar (above Curriculum)
+
+**Note:** This button is only clickable after ALL sections of a course have been generated.
+
+**How to test:**
+
+1. Create a new course and wait for all sections to generate
+2. Once complete, click the **"📊 Course Home"** button
+3. View the comprehensive analytics dashboard
+
+**Expected behavior:**
+
+- ✅ Beautiful gradient header with course title & progress ring
+- ✅ **Live XP tracking** - shows total XP earned in this course
+- ✅ **Real-time progress** - Articles Read, Flashcards Reviewed, Quizzes Completed
+- ✅ Progress bars show actual completion percentage based on YOUR activity
+- ✅ All data persists across page refreshes
+- ✅ Section Progress list showing completion status per section
+- ✅ Study Tips card with helpful learning advice
+- ✅ Course Details card showing level, tone, etc.
+- ✅ **RESET PROGRESS button** at the bottom to clear all progress
+
+**Analytics Shown (Live from Database):**
+
+- Total XP earned in this course
+- Articles read (X/total) with percentage
+- Flashcards reviewed (X/total) with percentage
+- Quizzes completed (X/total) with accuracy percentage
+- Mind maps reviewed
+- Per-content-type completion bars
+- Quiz accuracy (correct answers / total attempted)
+
+**Reset Progress:**
+
+1. Scroll to the bottom of Course Home
+2. Click the red **"Reset Progress"** button
+3. Confirm the action
+4. All XP and completions for this course are cleared
+5. You can now go through all content again!
+
+---
 
 ### 1. 📖 Article Pages - "Mark Complete" Button
 
@@ -38,6 +93,7 @@ Welcome to the CleverCourse gamification engine! This guide will help you test a
 - ✅ **XP popup** shows "+10 XP" with a sparkle animation
 - ✅ Button becomes disabled (can't claim XP twice)
 - ✅ Badge shows how many pages you've completed
+- ✅ **Progress saved to database** - refresh and it's still complete!
 
 **XP Awarded:** 10 XP per page
 
@@ -59,7 +115,7 @@ Welcome to the CleverCourse gamification engine! This guide will help you test a
 - ✅ **Large confetti burst** celebrates your understanding
 - ✅ **XP badge** appears with "+20 XP"
 - ✅ Green success styling indicates completion
-- ✅ Can only claim XP once per mind map
+- ✅ **Progress saved to database** - survives refresh!
 
 **XP Awarded:** 20 XP per mind map
 
@@ -83,6 +139,7 @@ Welcome to the CleverCourse gamification engine! This guide will help you test a
 - ✅ Progress counter updates (e.g., "3/10 cards learned")
 - ✅ When ALL cards are learned: **Big confetti celebration!** 🎊
 - ✅ "Deck Complete!" message appears
+- ✅ **Progress saved to database** - refresh and cards stay marked!
 
 **XP Awarded:** 5 XP per flashcard
 
@@ -106,6 +163,7 @@ Welcome to the CleverCourse gamification engine! This guide will help you test a
 - ✅ Answer option turns green with a checkmark
 - ✅ Wrong answers show the correct answer highlighted
 - ✅ "Continue" button appears to move to next question
+- ✅ **Progress saved to database** - quiz completion persists!
 
 **XP Awarded:** 15 XP per correct answer
 
