@@ -47,4 +47,4 @@ pnpm dev
 - Quizzes with multiple formats
 - Gamification with XP, levels, and achievements
 - Course progress tracking
-- AI chat assistant
+- Article Podcast feature
