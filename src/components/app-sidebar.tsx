@@ -679,13 +679,28 @@ function CourseSectionItem({
   isActive: boolean;
   onSelect: () => void;
 }) {
-  const setActiveView = useCourseStore((state) => state.setActiveView);
+  const { setActiveView, activeView } = useCourseStore();
 
   const handleSubItemClick = (view: ViewType) => {
     if (!isActive) {
       onSelect();
     }
     setActiveView(view);
+  };
+
+  // Helper to get the appropriate classes for each menu item
+  const getItemClasses = (
+    view: ViewType,
+    hoverBg: string,
+    activeBg: string,
+  ) => {
+    const isSelected = isActive && activeView === view;
+    return cn(
+      "flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors",
+      isSelected
+        ? `${activeBg} text-foreground`
+        : `text-muted-foreground hover:text-foreground ${hoverBg}`,
+    );
   };
 
   return (
@@ -726,7 +741,11 @@ function CourseSectionItem({
             {/* Article */}
             <button
               onClick={() => handleSubItemClick("article")}
-              className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+              className={getItemClasses(
+                "article",
+                "hover:bg-green-500/10",
+                "bg-green-500/20",
+              )}
             >
               <BookOpen className="size-4 text-green-600" />
               <span>Article</span>
@@ -747,14 +766,22 @@ function CourseSectionItem({
                 <div className="ml-4 pl-2 border-l border-zinc-700 mt-1 flex flex-col gap-0.5">
                   <button
                     onClick={() => handleSubItemClick("mindmap")}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                    className={getItemClasses(
+                      "mindmap",
+                      "hover:bg-pink-500/10",
+                      "bg-pink-500/20",
+                    )}
                   >
                     <Brain className="size-4 text-pink-600" />
                     <span>Mind Map</span>
                   </button>
                   <button
                     onClick={() => handleSubItemClick("flashcards")}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                    className={getItemClasses(
+                      "flashcards",
+                      "hover:bg-yellow-500/10",
+                      "bg-yellow-500/20",
+                    )}
                   >
                     <Layers className="size-4 text-yellow-600" />
                     <span>Flashcards</span>
@@ -778,21 +805,33 @@ function CourseSectionItem({
                 <div className="ml-4 pl-2 border-l border-zinc-700 mt-1 flex flex-col gap-0.5">
                   <button
                     onClick={() => handleSubItemClick("mcq")}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                    className={getItemClasses(
+                      "mcq",
+                      "hover:bg-purple-500/10",
+                      "bg-purple-500/20",
+                    )}
                   >
                     <ListChecks className="size-4 text-purple-600" />
                     <span>Multiple Choice</span>
                   </button>
                   <button
                     onClick={() => handleSubItemClick("tf")}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                    className={getItemClasses(
+                      "tf",
+                      "hover:bg-amber-500/10",
+                      "bg-amber-500/20",
+                    )}
                   >
                     <ToggleLeft className="size-4 text-amber-700" />
                     <span>True / False</span>
                   </button>
                   <button
                     onClick={() => handleSubItemClick("fill")}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                    className={getItemClasses(
+                      "fill",
+                      "hover:bg-stone-500/10",
+                      "bg-stone-500/20",
+                    )}
                   >
                     <Type className="size-4 text-stone-600" />
                     <span>Fill Ups</span>
