@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useChatStore, ChatMessage } from "@/store/use-chat-store";
+import { useCourseStore } from "@/store/use-course-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -22,9 +23,97 @@ export function ChatPanel() {
     clearMessages,
   } = useChatStore();
 
+  const { currentSection, activeView, currentCourse } = useCourseStore();
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Build page context based on active view and current section content
+  const pageContext = useMemo(() => {
+    if (!currentSection) return null;
+
+    const sectionTitle = currentSection.title;
+    let content = "";
+    let contextType = "";
+
+    switch (activeView) {
+      case "article":
+        if (currentSection.articlePages?.length > 0) {
+          contextType = "Article";
+          content = currentSection.articlePages
+            .map((page) => `## ${page.title}\n${page.content}`)
+            .join("\n\n");
+        }
+        break;
+
+      case "flashcards":
+        if (currentSection.flashcards?.length > 0) {
+          contextType = "Flashcards";
+          content = currentSection.flashcards
+            .map((card) => `Q: ${card.front}\nA: ${card.back}`)
+            .join("\n\n");
+        }
+        break;
+
+      case "mindmap":
+        if (currentSection.mindMaps?.length > 0) {
+          contextType = "Mind Map";
+          content = currentSection.mindMaps
+            .map((map) => `Topic: ${map.title}\nData: ${map.data}`)
+            .join("\n\n");
+        }
+        break;
+
+      case "mcq":
+        if (currentSection.mcqQuestions?.length > 0) {
+          contextType = "Multiple Choice Quiz";
+          content = currentSection.mcqQuestions
+            .map(
+              (q) =>
+                `Question: ${q.question}\nOptions: ${q.options}\nCorrect: ${q.correctAnswer}\nExplanation: ${q.explanation || "N/A"}`
+            )
+            .join("\n\n");
+        }
+        break;
+
+      case "tf":
+        if (currentSection.trueFalseQuestions?.length > 0) {
+          contextType = "True/False Quiz";
+          content = currentSection.trueFalseQuestions
+            .map(
+              (q) =>
+                `Statement: ${q.statement}\nAnswer: ${q.isTrue ? "True" : "False"}\nExplanation: ${q.explanation || "N/A"}`
+            )
+            .join("\n\n");
+        }
+        break;
+
+      case "fill":
+        if (currentSection.fillUpQuestions?.length > 0) {
+          contextType = "Fill in the Blanks Quiz";
+          content = currentSection.fillUpQuestions
+            .map(
+              (q) =>
+                `Sentence: ${q.sentence}\nAnswer: ${q.answer}\nExplanation: ${q.explanation || "N/A"}`
+            )
+            .join("\n\n");
+        }
+        break;
+
+      default:
+        return null;
+    }
+
+    if (!content) return null;
+
+    return {
+      type: contextType,
+      sectionTitle,
+      courseName: currentCourse?.title || currentCourse?.topic || "Unknown Course",
+      content,
+    };
+  }, [currentSection, activeView, currentCourse]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,10 +146,18 @@ export function ChatPanel() {
     setIsLoading(true);
 
     try {
-      // Call Gemini API
+      // Call Gemini API with page context
       const result = await sendChatMessage({
         message: input,
         context: highlightedContent || undefined,
+        pageContext: pageContext
+          ? {
+              type: pageContext.type,
+              sectionTitle: pageContext.sectionTitle,
+              courseName: pageContext.courseName,
+              content: pageContext.content,
+            }
+          : undefined,
         conversationHistory: messages.map((msg) => ({
           role: msg.role === "user" ? "user" : "model",
           parts: msg.content,
@@ -121,16 +218,37 @@ export function ChatPanel() {
         </div>
       </div>
 
+      {/* Page Context Indicator */}
+      {pageContext && (
+        <div className="px-4 py-2 bg-primary/5 border-b">
+          <div className="flex items-center gap-2 text-xs">
+            <Badge variant="outline" className="text-xs">
+              {pageContext.type}
+            </Badge>
+            <span className="text-muted-foreground truncate">
+              {pageContext.sectionTitle}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-6">
             <MessageSquare className="h-12 w-12 mb-4 opacity-50" />
             <h3 className="font-semibold text-lg mb-2">Start a conversation</h3>
-            <p className="text-sm">
-              Ask me anything about your courses, or highlight text on the page
-              and I'll help you understand it better.
-            </p>
+            {pageContext ? (
+              <p className="text-sm">
+                Ask me anything about the <strong>{pageContext.type}</strong> you&apos;re viewing, 
+                or highlight text on the page and I&apos;ll help you understand it better.
+              </p>
+            ) : (
+              <p className="text-sm">
+                Open an article, study material, or quiz to get context-aware help.
+                You can also highlight text on the page to ask about it.
+              </p>
+            )}
           </div>
         ) : (
           <>

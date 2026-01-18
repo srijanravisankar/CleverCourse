@@ -4,9 +4,17 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
+export interface PageContext {
+  type: string; // "Article", "Flashcards", "Mind Map", "Multiple Choice Quiz", etc.
+  sectionTitle: string;
+  courseName: string;
+  content: string;
+}
+
 export interface ChatRequest {
   message: string;
-  context?: string;
+  context?: string; // Highlighted text from the page
+  pageContext?: PageContext; // Full page content for context
   conversationHistory?: Array<{ role: "user" | "model"; parts: string }>;
 }
 
@@ -26,10 +34,25 @@ export async function sendChatMessage(
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-    // Build the prompt with context if provided
+    // Build the prompt with page context and highlighted text
     let prompt = request.message;
-    if (request.context) {
-      prompt = `Based on the following context:\n\n"${request.context}"\n\nUser question: ${request.message}`;
+    
+    // Add page context as system-level context
+    if (request.pageContext) {
+      const { type, sectionTitle, courseName, content } = request.pageContext;
+      prompt = `You are an AI tutor helping a student learn. You are currently viewing the "${type}" section titled "${sectionTitle}" from the course "${courseName}".
+
+Here is the content being studied:
+---
+${content}
+---
+
+${request.context ? `The student has highlighted the following text: "${request.context}"\n\n` : ""}Student's question: ${request.message}
+
+Please provide a helpful, educational response based on this context. Keep your answer focused on the material shown above.`;
+    } else if (request.context) {
+      // Fallback: only highlighted text, no page context
+      prompt = `Based on the following highlighted text:\n\n"${request.context}"\n\nUser question: ${request.message}`;
     }
 
     // Start a chat session if there's conversation history
@@ -74,8 +97,22 @@ export async function* streamChatMessage(
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     let prompt = request.message;
-    if (request.context) {
-      prompt = `Based on the following context:\n\n"${request.context}"\n\nUser question: ${request.message}`;
+    
+    // Build prompt with page context
+    if (request.pageContext) {
+      const { type, sectionTitle, courseName, content } = request.pageContext;
+      prompt = `You are an AI tutor helping a student learn. You are currently viewing the "${type}" section titled "${sectionTitle}" from the course "${courseName}".
+
+Here is the content being studied:
+---
+${content}
+---
+
+${request.context ? `The student has highlighted the following text: "${request.context}"\n\n` : ""}Student's question: ${request.message}
+
+Please provide a helpful, educational response based on this context. Keep your answer focused on the material shown above.`;
+    } else if (request.context) {
+      prompt = `Based on the following highlighted text:\n\n"${request.context}"\n\nUser question: ${request.message}`;
     }
 
     const result = await model.generateContentStream(prompt);

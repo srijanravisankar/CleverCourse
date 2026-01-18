@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Toggle } from "@/components/ui/toggle"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 
 interface ArticlePage {
   pageTitle: string
@@ -507,7 +508,7 @@ export function ArticleView({ pages }: ArticleViewProps) {
             <div className="flex items-center gap-2">
               {/* Slideshow Controls */}
               <TooltipProvider>
-                <div className="flex items-center gap-1 mr-2 bg-secondary rounded-full p-1 px-2 border-1 border-accent-foreground/50">
+                <div className={cn("flex items-center gap-1 mr-2 bg-secondary rounded-full -mt-7 p-1 px-2", isSlideshowActive ? " border border-accent-foreground/50" : "")}>
                   
                   {isSlideshowActive && (
                     <Tooltip>
@@ -528,15 +529,20 @@ export function ArticleView({ pages }: ArticleViewProps) {
                   
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant={isPlaying ? "default" : "ghost"}
-                        size="icon"
-                        className={`h-8 w-8 rounded-full bg-green-600 text-white hover:bg-green-700`}
-                        onClick={handlePlay}
-                      >
-                        {isPlaying ? <Pause className="size-4 text-white" /> : <Play className="size-4 text-primary" />}
-                      </Button>
-                    </TooltipTrigger>
+                        <Button
+                          variant={isPlaying ? "default" : "ghost"}
+                          className={cn(
+                            "h-8 w-8 mt-1 rounded-full bg-green-600 text-white hover:bg-green-700 border border-accent-foreground flex items-center justify-center",
+                          )}
+                          onClick={handlePlay}
+                        >
+                          {isPlaying ? (
+                            <Pause className="size-4 text-black" />
+                          ) : (
+                            <Play className="size-4 text-black" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
                     <TooltipContent>
                       {isPlaying ? "Pause slideshow" : (isSlideshowActive ? "Resume slideshow" : "Start slideshow")}
                     </TooltipContent>

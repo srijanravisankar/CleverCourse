@@ -379,7 +379,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                       title="View Course Network Graph"
                     >
                       <Network className="size-3.5" />
-                      <span>Network</span>
+                      <span>Eagle View</span>
                     </button>
                   )}
                 </div>
