@@ -164,7 +164,7 @@ function splitMarkdownIntoSentences(
         continue;
       }
 
-      // For regular paragraphs, split by sentence-ending punctuation
+      // split by sentence-ending punctuation
       let remaining = trimmedBlock;
       const sentenceRegex = /^([\s\S]*?[.!?])(?:\s|$)/;
 
