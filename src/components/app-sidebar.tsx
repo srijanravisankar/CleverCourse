@@ -550,18 +550,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => {
-                        const setActiveView =
-                          useCourseStore.getState().setActiveView;
-                        setActiveView("network");
+                        if (
+                          sections.length > 0 &&
+                          pendingSections.length === 0
+                        ) {
+                          const setActiveView =
+                            useCourseStore.getState().setActiveView;
+                          setActiveView("network");
+                        }
                       }}
-                      className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 rounded-lg transition-colors"
+                      disabled={
+                        sections.length === 0 || pendingSections.length > 0
+                      }
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                        sections.length > 0 && pendingSections.length === 0
+                          ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 cursor-pointer"
+                          : "bg-muted text-muted-foreground cursor-not-allowed opacity-60",
+                      )}
                     >
                       <Network className="size-4" />
                       <span>Eagle</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    View course structure
+                    {sections.length === 0 || pendingSections.length > 0
+                      ? "Complete course generation to view graph"
+                      : "View course structure"}
                   </TooltipContent>
                 </Tooltip>
               </div>
