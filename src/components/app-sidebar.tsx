@@ -336,7 +336,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
           {/* ============================================ */}
           {/* FIRST SIDEBAR: Discord-style Course Icons   */}
           {/* ============================================ */}
-          <div className="flex flex-col w-11 bg-zinc-900 py-1.5 gap-1 items-center border-r border-zinc-800 shrink-0">
+          <div className="flex flex-col w-14 bg-zinc-900 py-1.5 gap-1 items-center border-r border-zinc-800 shrink-0">
             {/* App Logo */}
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-600 text-white mt-1 hover:rounded-md transition-all duration-200 cursor-pointer">
               <GraduationCap className="size-6" />
@@ -379,7 +379,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                             colors.bg,
                             colors.text,
                             isActive
-                              ? "rounded-md"
+                              ? "rounded-md ring-2 ring-white ring-offset-2 ring-offset-zinc-900"
                               : "rounded-[16px] hover:rounded-md",
                           )}
                         >
@@ -471,7 +471,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
           <div
             className={cn(
               "flex flex-col bg-sidebar transition-all duration-300 ease-in-out overflow-hidden shrink-0",
-              courseSidebarOpen ? "w-[280px] border-r" : "w-0",
+              courseSidebarOpen ? "w-[287px] border-r" : "w-0",
             )}
           >
             {/* Header */}
