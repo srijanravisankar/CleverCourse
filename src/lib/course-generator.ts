@@ -508,7 +508,7 @@ Use these materials as reference to ensure accuracy and relevance.`
 }
 
 /**
- * Persist a generated section to the database using a transaction for atomicity
+ * Persist a generated section to the database using Drizzle ORM
  */
 async function persistSection(
   courseId: string,
@@ -516,164 +516,110 @@ async function persistSection(
   content: GeneratedSection,
   previousContext: string,
 ): Promise<string> {
-  // Use the raw sqlite instance for transaction
-  const { sqlite } = await import("@/db/index");
+  const { db } = await import("@/db/index");
+  const { 
+    courseSections, 
+    articlePages, 
+    mindMaps, 
+    flashcards, 
+    mcqQuestions, 
+    trueFalseQuestions, 
+    fillUpQuestions 
+  } = await import("@/db/schema");
 
-  // Prepare all the data before starting the transaction
+  // Prepare all the data
   const sectionId = crypto.randomUUID();
+  const now = new Date();
 
-  const articlePagesData = content.article.pages.map((page, index) => ({
-    id: crypto.randomUUID(),
-    sectionId,
-    pageNumber: index + 1,
-    pageTitle: page.pageTitle,
-    content: page.content,
-  }));
+  // Insert section
+  await db.insert(courseSections).values({
+    id: sectionId,
+    courseId,
+    sectionNumber,
+    title: content.sectionTitle,
+    previousContext,
+    isCompleted: false,
+    createdAt: now,
+    updatedAt: now,
+  });
 
-  const mindMapData = content.studyMaterial.mindMap
-    ? {
+  // Insert article pages
+  if (content.article.pages.length > 0) {
+    await db.insert(articlePages).values(
+      content.article.pages.map((page, index) => ({
         id: crypto.randomUUID(),
         sectionId,
-        data: JSON.stringify(content.studyMaterial.mindMap),
-      }
-    : null;
+        pageNumber: index + 1,
+        pageTitle: page.pageTitle,
+        content: page.content,
+        createdAt: now,
+      }))
+    );
+  }
 
-  const flashcardsData = content.studyMaterial.flashcards.map((card) => ({
-    id: crypto.randomUUID(),
-    sectionId,
-    front: card.front,
-    back: card.back,
-  }));
+  // Insert mind map
+  if (content.studyMaterial.mindMap) {
+    await db.insert(mindMaps).values({
+      id: crypto.randomUUID(),
+      sectionId,
+      data: JSON.stringify(content.studyMaterial.mindMap),
+      createdAt: now,
+    });
+  }
 
-  const mcqsData = content.quiz.mcqs.map((mcq) => ({
-    id: crypto.randomUUID(),
-    sectionId,
-    question: mcq.question,
-    options: JSON.stringify(mcq.options),
-    answer: mcq.answer,
-  }));
-
-  const trueFalseData = content.quiz.trueFalse.map((tf) => ({
-    id: crypto.randomUUID(),
-    sectionId,
-    question: tf.question,
-    answer: tf.answer ? 1 : 0,
-    explanation: tf.explanation,
-  }));
-
-  const fillUpsData = content.quiz.fillUps.map((fill) => ({
-    id: crypto.randomUUID(),
-    sectionId,
-    sentence: fill.sentence,
-    missingWord: fill.missingWord,
-  }));
-
-  // Execute all inserts in a single transaction for speed
-  const now = new Date().getTime(); // SQLite stores timestamps as integers
-
-  sqlite.transaction(() => {
-    // Insert section (course_sections has updated_at)
-    sqlite
-      .prepare(
-        `
-      INSERT INTO course_sections (id, course_id, section_number, title, previous_context, is_completed, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, 0, ?, ?)
-    `,
-      )
-      .run(
+  // Insert flashcards
+  if (content.studyMaterial.flashcards.length > 0) {
+    await db.insert(flashcards).values(
+      content.studyMaterial.flashcards.map((card) => ({
+        id: crypto.randomUUID(),
         sectionId,
-        courseId,
-        sectionNumber,
-        content.sectionTitle,
-        previousContext,
-        now,
-        now,
-      );
+        front: card.front,
+        back: card.back,
+        createdAt: now,
+      }))
+    );
+  }
 
-    // Insert article pages (no updated_at column)
-    const insertArticle = sqlite.prepare(`
-      INSERT INTO article_pages (id, section_id, page_number, page_title, content, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    for (const page of articlePagesData) {
-      insertArticle.run(
-        page.id,
-        page.sectionId,
-        page.pageNumber,
-        page.pageTitle,
-        page.content,
-        now,
-      );
-    }
+  // Insert MCQs
+  if (content.quiz.mcqs.length > 0) {
+    await db.insert(mcqQuestions).values(
+      content.quiz.mcqs.map((mcq) => ({
+        id: crypto.randomUUID(),
+        sectionId,
+        question: mcq.question,
+        options: JSON.stringify(mcq.options),
+        answer: mcq.answer,
+        createdAt: now,
+      }))
+    );
+  }
 
-    // Insert mind map (no updated_at column)
-    if (mindMapData) {
-      sqlite
-        .prepare(
-          `
-        INSERT INTO mind_maps (id, section_id, data, created_at)
-        VALUES (?, ?, ?, ?)
-      `,
-        )
-        .run(mindMapData.id, mindMapData.sectionId, mindMapData.data, now);
-    }
+  // Insert True/False
+  if (content.quiz.trueFalse.length > 0) {
+    await db.insert(trueFalseQuestions).values(
+      content.quiz.trueFalse.map((tf) => ({
+        id: crypto.randomUUID(),
+        sectionId,
+        question: tf.question,
+        answer: tf.answer,
+        explanation: tf.explanation,
+        createdAt: now,
+      }))
+    );
+  }
 
-    // Insert flashcards (no updated_at column)
-    const insertFlashcard = sqlite.prepare(`
-      INSERT INTO flashcards (id, section_id, front, back, created_at)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    for (const card of flashcardsData) {
-      insertFlashcard.run(card.id, card.sectionId, card.front, card.back, now);
-    }
-
-    // Insert MCQs (no updated_at column)
-    const insertMcq = sqlite.prepare(`
-      INSERT INTO mcq_questions (id, section_id, question, options, answer, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    for (const mcq of mcqsData) {
-      insertMcq.run(
-        mcq.id,
-        mcq.sectionId,
-        mcq.question,
-        mcq.options,
-        mcq.answer,
-        now,
-      );
-    }
-
-    // Insert True/False (no updated_at column)
-    const insertTf = sqlite.prepare(`
-      INSERT INTO true_false_questions (id, section_id, question, answer, explanation, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    for (const tf of trueFalseData) {
-      insertTf.run(
-        tf.id,
-        tf.sectionId,
-        tf.question,
-        tf.answer,
-        tf.explanation,
-        now,
-      );
-    }
-
-    // Insert Fill-ups (no updated_at column)
-    const insertFill = sqlite.prepare(`
-      INSERT INTO fill_up_questions (id, section_id, sentence, missing_word, created_at)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    for (const fill of fillUpsData) {
-      insertFill.run(
-        fill.id,
-        fill.sectionId,
-        fill.sentence,
-        fill.missingWord,
-        now,
-      );
-    }
-  })();
+  // Insert Fill-ups
+  if (content.quiz.fillUps.length > 0) {
+    await db.insert(fillUpQuestions).values(
+      content.quiz.fillUps.map((fill) => ({
+        id: crypto.randomUUID(),
+        sectionId,
+        sentence: fill.sentence,
+        missingWord: fill.missingWord,
+        createdAt: now,
+      }))
+    );
+  }
 
   // Return a summary for context in next section
   return `Section ${sectionNumber}: ${content.sectionTitle} - Covered: ${content.article.pages.map((p) => p.pageTitle).join(", ")}`;
