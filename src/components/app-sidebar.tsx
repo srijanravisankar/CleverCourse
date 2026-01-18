@@ -345,7 +345,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
             <div className="w-5 h-[1px] bg-zinc-700 rounded-full mb-2 mt-2" />
 
             {/* Course Icons */}
-            <div className="flex flex-col gap-2 flex-1 overflow-y-auto overflow-x-visible scrollbar-hide px-1">
+            <div className="flex flex-col gap-2 flex-1 overflow-y-auto overflow-x-visible scrollbar-hide px-1 pt-1">
               {isLoadingCourses && courses.length === 0 ? (
                 <div className="flex items-center justify-center w-8 h-8">
                   <Loader2 className="size-3.5 animate-spin text-zinc-400" />
