@@ -18,6 +18,11 @@ import {
   AlertCircle,
   PanelLeftClose,
   PanelLeft,
+  GraduationCap,
+  User,
+  LogOut,
+  Moon,
+  Sun,
 } from "lucide-react";
 
 import { CreateCourseDialog } from "@/components/course/CreateCourseDialog";
@@ -32,6 +37,14 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCourseStore, ViewType } from "@/store/use-course-store";
 import {
   getAllCourses,
@@ -186,25 +199,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
           {/* ============================================ */}
           {/* FIRST SIDEBAR: Discord-style Course Icons   */}
           {/* ============================================ */}
-          <div className="flex flex-col w-[72px] bg-zinc-900 py-3 gap-2 items-center border-r border-zinc-800 shrink-0">
+          <div className="flex flex-col w-11 bg-zinc-900 py-1.5 gap-1 items-center border-r border-zinc-800 shrink-0">
             {/* App Logo */}
-            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-600 text-white mb-2 hover:rounded-xl transition-all duration-200 cursor-pointer">
-              <Command className="size-6" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-600 text-white mt-1 hover:rounded-md transition-all duration-200 cursor-pointer">
+              <GraduationCap className="size-6" />
             </div>
 
-            <div className="w-8 h-[2px] bg-zinc-700 rounded-full mb-2" />
+            <div className="w-5 h-[1px] bg-zinc-700 rounded-full mb-2 mt-2" />
 
             {/* Course Icons */}
             <div className="flex flex-col gap-2 flex-1 overflow-y-auto scrollbar-hide">
               {isLoadingCourses && courses.length === 0 ? (
-                <div className="flex items-center justify-center w-12 h-12">
-                  <Loader2 className="size-5 animate-spin text-zinc-400" />
+                <div className="flex items-center justify-center w-8 h-8">
+                  <Loader2 className="size-3.5 animate-spin text-zinc-400" />
                 </div>
               ) : error && courses.length === 0 ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-red-500/20 text-red-400 cursor-pointer">
-                      <AlertCircle className="size-5" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/20 text-red-400 cursor-pointer">
+                      <AlertCircle className="size-3.5" />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={10}>
@@ -225,21 +238,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                         <button
                           onClick={() => handleSelectCourse(course)}
                           className={cn(
-                            "relative flex items-center justify-center w-12 h-12 font-semibold text-sm transition-all duration-200 cursor-pointer group",
+                            "relative flex items-center justify-center w-8 h-8 font-semibold text-xs transition-all duration-200 cursor-pointer group",
                             colors.bg,
                             colors.text,
                             isActive
-                              ? "rounded-xl"
-                              : "rounded-[24px] hover:rounded-xl",
+                              ? "rounded-md"
+                              : "rounded-[16px] hover:rounded-md",
                           )}
                         >
                           {/* Active indicator */}
                           {isActive && (
-                            <div className="absolute -left-3 w-1 h-10 bg-white rounded-r-full" />
+                            <div className="absolute -left-2 w-0.5 h-7 bg-white rounded-r-full" />
                           )}
                           {/* Hover indicator */}
                           {!isActive && (
-                            <div className="absolute -left-3 w-1 h-0 bg-white rounded-r-full transition-all duration-200 group-hover:h-5" />
+                            <div className="absolute -left-2 w-0.5 h-0 bg-white rounded-r-full transition-all duration-200 group-hover:h-2.5" />
                           )}
                           {initials}
                         </button>
@@ -261,15 +274,49 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => setShowCreateDialog(true)}
-                    className="flex items-center justify-center w-12 h-12 rounded-[24px] bg-zinc-800 text-green-500 hover:rounded-xl hover:bg-green-600 hover:text-white transition-all duration-200 cursor-pointer"
+                    className="flex items-center mt-1.5 justify-center w-8 h-8 rounded-md bg-zinc-800 text-green-500 hover:rounded-md hover:bg-green-600 hover:text-white transition-all duration-200 cursor-pointer"
                   >
-                    <Plus className="size-6" />
+                    <Plus className="size-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right" sideOffset={10}>
                   Create New Course
                 </TooltipContent>
               </Tooltip>
+            </div>
+
+            {/* Profile Section */}
+            <div className="border-t border-zinc-800 mt-auto pt-2 pb-1.5">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button title="Profile" className="flex items-center justify-center w-8 h-8 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all duration-200 cursor-pointer">
+                    <User className="size-4" />
+                  </button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent side="right" align="end" className="w-48">
+                  <DropdownMenuLabel>John Doe</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuLabel className="text-xs font-normal text-muted-foreground py-1.5">
+                    Theme
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+                    <Sun className="size-4" />
+                    <span>Light</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+                    <Moon className="size-4" />
+                    <span>Dark</span>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-red-400">
+                    <LogOut className="size-4" />
+                    <span>Sign Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
@@ -304,9 +351,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                   <TooltipTrigger asChild>
                     <button
                       onClick={toggleCourseSidebar}
-                      className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                      className="p-0.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <PanelLeftClose className="size-4" />
+                      <PanelLeftClose className="size-3" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right">Close sidebar</TooltipContent>
@@ -376,9 +423,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                 <TooltipTrigger asChild>
                   <button
                     onClick={toggleCourseSidebar}
-                    className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                    className="p-0.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <PanelLeft className="size-4" />
+                    <PanelLeft className="size-3" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">Open sidebar</TooltipContent>
