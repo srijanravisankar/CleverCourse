@@ -336,7 +336,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
           {/* ============================================ */}
           {/* FIRST SIDEBAR: Discord-style Course Icons   */}
           {/* ============================================ */}
-          <div className="flex flex-col w-14 bg-zinc-900 py-1.5 gap-1 items-center border-r border-zinc-800 shrink-0">
+          <div className="flex flex-col w-14 bg-zinc-900 py-1.5 px-1 gap-1 items-center border-r border-zinc-800 shrink-0">
             {/* App Logo */}
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-600 text-white mt-1 hover:rounded-md transition-all duration-200 cursor-pointer">
               <GraduationCap className="size-6" />
@@ -345,7 +345,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
             <div className="w-5 h-[1px] bg-zinc-700 rounded-full mb-2 mt-2" />
 
             {/* Course Icons */}
-            <div className="flex flex-col gap-2 flex-1 overflow-y-auto scrollbar-hide">
+            <div className="flex flex-col gap-2 flex-1 overflow-y-auto overflow-x-visible scrollbar-hide px-1">
               {isLoadingCourses && courses.length === 0 ? (
                 <div className="flex items-center justify-center w-8 h-8">
                   <Loader2 className="size-3.5 animate-spin text-zinc-400" />
