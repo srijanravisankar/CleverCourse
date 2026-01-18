@@ -21,11 +21,19 @@ import {
   FileText,
   HelpCircle,
   Lightbulb,
+  RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Course, CourseSectionWithContent } from "@/db/types";
+import {
+  getCourseProgressStats,
+  resetCourseProgress,
+  type CourseProgressStats,
+} from "@/app/actions/progress";
 
 interface CourseHomeProps {
   course: Course;
@@ -36,6 +44,7 @@ interface CourseHomeProps {
     sectionNumber: number;
   }>;
   sectionContents: CourseSectionWithContent[];
+  onProgressReset?: () => void;
 }
 
 interface StatCardProps {
@@ -200,7 +209,73 @@ export function CourseHome({
   course,
   sections,
   sectionContents,
+  onProgressReset,
 }: CourseHomeProps) {
+  // User progress stats from database
+  const [progressStats, setProgressStats] =
+    React.useState<CourseProgressStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = React.useState(true);
+  const [isResetting, setIsResetting] = React.useState(false);
+
+  // Fetch progress stats on mount and when course changes
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      if (!course?.id) return;
+      setIsLoadingStats(true);
+      try {
+        const stats = await getCourseProgressStats(course.id);
+        setProgressStats(stats);
+      } catch (error) {
+        console.error("Error fetching progress stats:", error);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    fetchStats();
+  }, [course?.id]);
+
+  // Handle reset progress
+  const handleResetProgress = async () => {
+    if (!course?.id) return;
+    if (
+      !confirm(
+        "Are you sure you want to reset all progress for this course? This action cannot be undone.",
+      )
+    )
+      return;
+
+    setIsResetting(true);
+    try {
+      const result = await resetCourseProgress(course.id);
+      if (result.success) {
+        // Reset local stats
+        setProgressStats({
+          totalXpEarned: 0,
+          articlesCompleted: 0,
+          flashcardsCompleted: 0,
+          mindmapsCompleted: 0,
+          mcqCompleted: 0,
+          trueFalseCompleted: 0,
+          fillUpCompleted: 0,
+          totalQuizCorrect: 0,
+          totalQuizAttempted: 0,
+          completedContentIds: [],
+        });
+        // Notify parent
+        onProgressReset?.();
+        alert(`Progress reset! ${result.itemsReset} items cleared.`);
+      } else {
+        alert("Failed to reset progress: " + (result.error || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Error resetting progress:", error);
+      alert("Failed to reset progress");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   // Calculate statistics from actual data
   const totalSections = sections.length;
   const completedSections = sections.filter((s) => s.isCompleted).length;
@@ -351,46 +426,52 @@ export function CourseHome({
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Sections Completed"
-          value={`${completedSections}/${totalSections}`}
-          subtitle={`${Math.round(sectionProgress)}% complete`}
-          icon={<Layers className="size-24" />}
-          color="bg-gradient-to-br from-blue-500 to-blue-600 text-white"
-        />
-        <StatCard
-          title="Article Pages"
-          value={contentStats.totalArticles}
-          subtitle={`~${estimatedReadTime} min read time`}
-          icon={<FileText className="size-24" />}
-          color="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white"
-        />
-        <StatCard
-          title="Flashcards"
-          value={contentStats.totalFlashcards}
-          subtitle="Cards to review"
-          icon={<Brain className="size-24" />}
-          color="bg-gradient-to-br from-amber-500 to-orange-500 text-white"
-        />
-        <StatCard
-          title="Quiz Questions"
-          value={contentStats.totalQuizzes}
-          subtitle={`MCQ: ${contentStats.totalMcq} • T/F: ${contentStats.totalTrueFalse} • Fill: ${contentStats.totalFillUp}`}
-          icon={<Target className="size-24" />}
-          color="bg-gradient-to-br from-rose-500 to-pink-500 text-white"
-        />
-      </div>
+      {/* XP and Progress Stats */}
+      {isLoadingStats ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="size-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Total XP Earned"
+            value={progressStats?.totalXpEarned || 0}
+            subtitle="Experience points"
+            icon={<Zap className="size-24" />}
+            color="bg-gradient-to-br from-amber-500 to-yellow-500 text-white"
+          />
+          <StatCard
+            title="Articles Read"
+            value={`${progressStats?.articlesCompleted || 0}/${contentStats.totalArticles}`}
+            subtitle={`${contentStats.totalArticles > 0 ? Math.round(((progressStats?.articlesCompleted || 0) / contentStats.totalArticles) * 100) : 0}% complete`}
+            icon={<FileText className="size-24" />}
+            color="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white"
+          />
+          <StatCard
+            title="Flashcards Reviewed"
+            value={`${progressStats?.flashcardsCompleted || 0}/${contentStats.totalFlashcards}`}
+            subtitle={`${contentStats.totalFlashcards > 0 ? Math.round(((progressStats?.flashcardsCompleted || 0) / contentStats.totalFlashcards) * 100) : 0}% reviewed`}
+            icon={<Brain className="size-24" />}
+            color="bg-gradient-to-br from-purple-500 to-violet-500 text-white"
+          />
+          <StatCard
+            title="Quizzes Completed"
+            value={`${(progressStats?.mcqCompleted || 0) + (progressStats?.trueFalseCompleted || 0) + (progressStats?.fillUpCompleted || 0)}/${contentStats.totalQuizzes}`}
+            subtitle={`${progressStats?.totalQuizAttempted ? Math.round((progressStats.totalQuizCorrect / progressStats.totalQuizAttempted) * 100) : 0}% correct`}
+            icon={<Target className="size-24" />}
+            color="bg-gradient-to-br from-rose-500 to-pink-500 text-white"
+          />
+        </div>
+      )}
 
       {/* Content Breakdown & Progress */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Content Distribution */}
+        {/* Content Distribution & Completion */}
         <Card className="lg:col-span-1 shadow-lg border-none">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <PieChart className="size-5 text-violet-500" />
-              Content Distribution
+              Your Progress
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -402,11 +483,18 @@ export function CourseHome({
                     Articles
                   </span>
                   <span className="font-medium">
+                    {progressStats?.articlesCompleted || 0}/
                     {contentStats.totalArticles}
                   </span>
                 </div>
                 <Progress
-                  value={contentStats.totalArticles > 0 ? 100 : 0}
+                  value={
+                    contentStats.totalArticles > 0
+                      ? ((progressStats?.articlesCompleted || 0) /
+                          contentStats.totalArticles) *
+                        100
+                      : 0
+                  }
                   className="h-2 bg-emerald-100"
                 />
               </div>
@@ -418,11 +506,18 @@ export function CourseHome({
                     Flashcards
                   </span>
                   <span className="font-medium">
+                    {progressStats?.flashcardsCompleted || 0}/
                     {contentStats.totalFlashcards}
                   </span>
                 </div>
                 <Progress
-                  value={contentStats.totalFlashcards > 0 ? 100 : 0}
+                  value={
+                    contentStats.totalFlashcards > 0
+                      ? ((progressStats?.flashcardsCompleted || 0) /
+                          contentStats.totalFlashcards) *
+                        100
+                      : 0
+                  }
                   className="h-2 bg-amber-100"
                 />
               </div>
@@ -434,11 +529,18 @@ export function CourseHome({
                     Mind Maps
                   </span>
                   <span className="font-medium">
+                    {progressStats?.mindmapsCompleted || 0}/
                     {contentStats.totalMindMaps}
                   </span>
                 </div>
                 <Progress
-                  value={contentStats.totalMindMaps > 0 ? 100 : 0}
+                  value={
+                    contentStats.totalMindMaps > 0
+                      ? ((progressStats?.mindmapsCompleted || 0) /
+                          contentStats.totalMindMaps) *
+                        100
+                      : 0
+                  }
                   className="h-2 bg-blue-100"
                 />
               </div>
@@ -449,10 +551,18 @@ export function CourseHome({
                     <div className="size-3 rounded-full bg-rose-500" />
                     MCQ Questions
                   </span>
-                  <span className="font-medium">{contentStats.totalMcq}</span>
+                  <span className="font-medium">
+                    {progressStats?.mcqCompleted || 0}/{contentStats.totalMcq}
+                  </span>
                 </div>
                 <Progress
-                  value={contentStats.totalMcq > 0 ? 100 : 0}
+                  value={
+                    contentStats.totalMcq > 0
+                      ? ((progressStats?.mcqCompleted || 0) /
+                          contentStats.totalMcq) *
+                        100
+                      : 0
+                  }
                   className="h-2 bg-rose-100"
                 />
               </div>
@@ -464,11 +574,18 @@ export function CourseHome({
                     True/False
                   </span>
                   <span className="font-medium">
+                    {progressStats?.trueFalseCompleted || 0}/
                     {contentStats.totalTrueFalse}
                   </span>
                 </div>
                 <Progress
-                  value={contentStats.totalTrueFalse > 0 ? 100 : 0}
+                  value={
+                    contentStats.totalTrueFalse > 0
+                      ? ((progressStats?.trueFalseCompleted || 0) /
+                          contentStats.totalTrueFalse) *
+                        100
+                      : 0
+                  }
                   className="h-2 bg-purple-100"
                 />
               </div>
@@ -480,11 +597,18 @@ export function CourseHome({
                     Fill in Blanks
                   </span>
                   <span className="font-medium">
+                    {progressStats?.fillUpCompleted || 0}/
                     {contentStats.totalFillUp}
                   </span>
                 </div>
                 <Progress
-                  value={contentStats.totalFillUp > 0 ? 100 : 0}
+                  value={
+                    contentStats.totalFillUp > 0
+                      ? ((progressStats?.fillUpCompleted || 0) /
+                          contentStats.totalFillUp) *
+                        100
+                      : 0
+                  }
                   className="h-2 bg-cyan-100"
                 />
               </div>
@@ -601,6 +725,56 @@ export function CourseHome({
           </CardContent>
         </Card>
       </div>
+
+      {/* Reset Progress Section */}
+      <Card className="shadow-lg border-none border-red-200 dark:border-red-900">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg text-red-600 dark:text-red-400">
+            <RotateCcw className="size-5" />
+            Reset Course Progress
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                This will reset all your progress for this course, including
+                completed articles, flashcards, quizzes, and all earned XP. This
+                action cannot be undone.
+              </p>
+              {progressStats &&
+                progressStats.completedContentIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    You have completed{" "}
+                    {progressStats.completedContentIds.length} items and earned{" "}
+                    {progressStats.totalXpEarned} XP in this course.
+                  </p>
+                )}
+            </div>
+            <Button
+              variant="destructive"
+              onClick={handleResetProgress}
+              disabled={
+                isResetting ||
+                (progressStats?.completedContentIds.length || 0) === 0
+              }
+              className="whitespace-nowrap"
+            >
+              {isResetting ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="size-4 mr-2" />
+                  Reset Progress
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

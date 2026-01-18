@@ -22,13 +22,8 @@ import { TrueFalse } from "@/components/quiz/TrueFalse";
 import { FillInTheBlanks } from "@/components/quiz/FillInTheBlanks";
 import { Loader2, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  onQuizAnswerCorrect,
-  onArticleCompleted,
-  onMindmapReviewed,
-  onFlashcardReviewed,
-} from "@/app/actions/gamification";
 import { getSectionWithContent } from "@/app/actions/courses";
+import { markContentCompleted } from "@/app/actions/progress";
 import type { CourseSectionWithContent } from "@/db/types";
 
 export default function CoursePage() {
@@ -47,6 +42,7 @@ export default function CoursePage() {
     CourseSectionWithContent[]
   >([]);
   const [isLoadingHomeData, setIsLoadingHomeData] = React.useState(false);
+  const [homeRefreshKey, setHomeRefreshKey] = React.useState(0);
 
   React.useEffect(() => {
     setIsMounted(true);
@@ -191,6 +187,7 @@ export default function CoursePage() {
               currentCourse &&
               activeView === "home" && (
                 <CourseHome
+                  key={homeRefreshKey}
                   course={currentCourse}
                   sections={sections.map((s) => ({
                     id: s.id,
@@ -199,6 +196,7 @@ export default function CoursePage() {
                     sectionNumber: s.sectionNumber,
                   }))}
                   sectionContents={allSectionContents}
+                  onProgressReset={() => setHomeRefreshKey((k) => k + 1)}
                 />
               )}
 
@@ -235,9 +233,12 @@ export default function CoursePage() {
               (currentSection.articlePages.length > 0 ? (
                 <ArticleView
                   pages={currentSection.articlePages.map((p) => ({
+                    id: p.id,
                     pageTitle: p.pageTitle,
                     content: p.content,
                   }))}
+                  courseId={currentCourse?.id}
+                  sectionId={currentSection.id}
                 />
               ) : (
                 <EmptyState
@@ -255,9 +256,12 @@ export default function CoursePage() {
                   {currentSection.flashcards.length > 0 ? (
                     <Flashcards
                       cards={currentSection.flashcards.map((f) => ({
+                        id: f.id,
                         front: f.front,
                         back: f.back,
                       }))}
+                      courseId={currentCourse?.id}
+                      sectionId={currentSection.id}
                     />
                   ) : (
                     <EmptyState
@@ -278,6 +282,9 @@ export default function CoursePage() {
                   parseMindMapData(currentSection.mindMaps[0]) ? (
                     <MindMap
                       data={parseMindMapData(currentSection.mindMaps[0])!}
+                      mindmapId={currentSection.mindMaps[0].id}
+                      courseId={currentCourse?.id}
+                      sectionId={currentSection.id}
                     />
                   ) : (
                     <EmptyState
@@ -322,11 +329,16 @@ export default function CoursePage() {
                       }
                       onNext={() => setCurrentQuizIndex((prev) => prev + 1)}
                       onCorrectAnswer={() => {
+                        if (!currentCourse || !currentSection) return;
                         const questionId =
                           currentSection.mcqQuestions[currentQuizIndex].id;
-                        onQuizAnswerCorrect(questionId, "mcq").catch(
-                          console.error,
-                        );
+                        markContentCompleted(
+                          currentCourse.id,
+                          currentSection.id,
+                          "mcq",
+                          questionId,
+                          true,
+                        ).catch(console.error);
                       }}
                     />
                   ) : (
@@ -367,12 +379,17 @@ export default function CoursePage() {
                       }
                       onNext={() => setCurrentQuizIndex((prev) => prev + 1)}
                       onCorrectAnswer={() => {
+                        if (!currentCourse || !currentSection) return;
                         const questionId =
                           currentSection.trueFalseQuestions[currentQuizIndex]
                             .id;
-                        onQuizAnswerCorrect(questionId, "tf").catch(
-                          console.error,
-                        );
+                        markContentCompleted(
+                          currentCourse.id,
+                          currentSection.id,
+                          "truefalse",
+                          questionId,
+                          true,
+                        ).catch(console.error);
                       }}
                     />
                   ) : (
@@ -408,11 +425,16 @@ export default function CoursePage() {
                       }
                       onNext={() => setCurrentQuizIndex((prev) => prev + 1)}
                       onCorrectAnswer={() => {
+                        if (!currentCourse || !currentSection) return;
                         const questionId =
                           currentSection.fillUpQuestions[currentQuizIndex].id;
-                        onQuizAnswerCorrect(questionId, "fill").catch(
-                          console.error,
-                        );
+                        markContentCompleted(
+                          currentCourse.id,
+                          currentSection.id,
+                          "fillup",
+                          questionId,
+                          true,
+                        ).catch(console.error);
                       }}
                     />
                   ) : (

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
+import { markContentCompleted } from "@/app/actions/progress";
 
 interface Flashcard {
   id?: string;
@@ -21,12 +22,16 @@ interface Flashcard {
 
 interface FlashcardsProps {
   cards: Flashcard[];
+  courseId?: string;
+  sectionId?: string;
   onFlashcardReviewed?: (cardId: string) => void;
   onAllCardsCompleted?: () => void;
 }
 
 export function Flashcards({
   cards,
+  courseId,
+  sectionId,
   onFlashcardReviewed,
   onAllCardsCompleted,
 }: FlashcardsProps) {
@@ -58,14 +63,28 @@ export function Flashcards({
     }
   }, [reviewedCount, totalCards, allCompleted, onAllCardsCompleted]);
 
-  const handleMarkReviewed = () => {
+  const handleMarkReviewed = async () => {
     if (!isCurrentReviewed) {
       setReviewedCards((prev) => new Set([...prev, currentIndex]));
       setShowXpBadge(true);
       setTimeout(() => setShowXpBadge(false), 1500);
 
-      // Call callback with card ID or index
+      // Save to database
       const cardId = cards[currentIndex].id || String(currentIndex);
+      if (courseId && sectionId && cards[currentIndex].id) {
+        try {
+          await markContentCompleted(
+            courseId,
+            sectionId,
+            "flashcard",
+            cards[currentIndex].id,
+          );
+        } catch (error) {
+          console.error("Error marking flashcard complete:", error);
+        }
+      }
+
+      // Call callback with card ID or index
       onFlashcardReviewed?.(cardId);
     }
   };
