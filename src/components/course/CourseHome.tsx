@@ -279,8 +279,6 @@ export function CourseHome({
   // Calculate statistics from actual data
   const totalSections = sections.length;
   const completedSections = sections.filter((s) => s.isCompleted).length;
-  const sectionProgress =
-    totalSections > 0 ? (completedSections / totalSections) * 100 : 0;
 
   // Calculate content stats
   const contentStats = React.useMemo(() => {
@@ -310,6 +308,29 @@ export function CourseHome({
       totalMindMaps,
     };
   }, [sectionContents]);
+
+  // Calculate overall course progress based on completed content
+  const courseProgress = React.useMemo(() => {
+    if (!progressStats) return 0;
+
+    const totalContent =
+      contentStats.totalArticles +
+      contentStats.totalFlashcards +
+      contentStats.totalMindMaps +
+      contentStats.totalQuizzes;
+
+    if (totalContent === 0) return 0;
+
+    const completedContent =
+      (progressStats.articlesCompleted || 0) +
+      (progressStats.flashcardsCompleted || 0) +
+      (progressStats.mindmapsCompleted || 0) +
+      (progressStats.mcqCompleted || 0) +
+      (progressStats.trueFalseCompleted || 0) +
+      (progressStats.fillUpCompleted || 0);
+
+    return Math.round((completedContent / totalContent) * 100);
+  }, [progressStats, contentStats]);
 
   // Get section-specific stats
   const getSectionStats = (sectionId: string) => {
@@ -392,7 +413,7 @@ export function CourseHome({
             </div>
             <div className="hidden lg:block">
               <ProgressRing
-                progress={sectionProgress}
+                progress={courseProgress}
                 label="Course Progress"
                 color="text-white"
                 size={100}
