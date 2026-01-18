@@ -4,6 +4,7 @@ import * as React from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ArticleView } from "@/components/course/ArticleView";
 import { CourseGraph } from "@/components/course/CourseGraph";
+import { CourseHome } from "@/components/course/CourseHome";
 import { Flashcards } from "@/components/studyMaterial/Flashcards";
 import { useCourseStore } from "@/store/use-course-store";
 import {
@@ -20,12 +21,15 @@ import { Button } from "@/components/ui/button";
 import { TrueFalse } from "@/components/quiz/TrueFalse";
 import { FillInTheBlanks } from "@/components/quiz/FillInTheBlanks";
 import { Loader2, BookOpen } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   onQuizAnswerCorrect,
   onArticleCompleted,
   onMindmapReviewed,
   onFlashcardReviewed,
 } from "@/app/actions/gamification";
+import { getSectionWithContent } from "@/app/actions/courses";
+import type { CourseSectionWithContent } from "@/db/types";
 
 export default function CoursePage() {
   const {
@@ -34,10 +38,15 @@ export default function CoursePage() {
     currentSection,
     sections,
     isLoadingSection,
+    getCachedSectionContent,
   } = useCourseStore();
 
   const [isMounted, setIsMounted] = React.useState(false);
   const [currentQuizIndex, setCurrentQuizIndex] = React.useState(0);
+  const [allSectionContents, setAllSectionContents] = React.useState<
+    CourseSectionWithContent[]
+  >([]);
+  const [isLoadingHomeData, setIsLoadingHomeData] = React.useState(false);
 
   React.useEffect(() => {
     setIsMounted(true);
@@ -47,6 +56,39 @@ export default function CoursePage() {
   React.useEffect(() => {
     setCurrentQuizIndex(0);
   }, [activeView, currentSection?.id]);
+
+  // Load all section contents when viewing Course Home
+  React.useEffect(() => {
+    const loadAllSectionContents = async () => {
+      if (activeView !== "home" || !currentCourse || sections.length === 0)
+        return;
+
+      setIsLoadingHomeData(true);
+      try {
+        const contents: CourseSectionWithContent[] = [];
+        for (const section of sections) {
+          // Check cache first
+          const cached = getCachedSectionContent(section.id);
+          if (cached) {
+            contents.push(cached);
+          } else {
+            // Fetch from server
+            const content = await getSectionWithContent(section.id);
+            if (content) {
+              contents.push(content);
+            }
+          }
+        }
+        setAllSectionContents(contents);
+      } catch (error) {
+        console.error("Error loading section contents:", error);
+      } finally {
+        setIsLoadingHomeData(false);
+      }
+    };
+
+    loadAllSectionContents();
+  }, [activeView, currentCourse, sections, getCachedSectionContent]);
 
   if (!isMounted) return null;
 
@@ -108,13 +150,15 @@ export default function CoursePage() {
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem className="hidden md:block">
                 <BreadcrumbLink href="#">
-                  {currentSection?.title || "No Section"}
+                  {activeView === "home"
+                    ? "Analytics"
+                    : currentSection?.title || "No Section"}
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>
                 <BreadcrumbPage className="capitalize font-semibold text-primary">
-                  {activeView}
+                  {activeView === "home" ? "Course Home" : activeView}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
@@ -123,17 +167,43 @@ export default function CoursePage() {
 
         {/* Unified Dynamic Content Area */}
         <div className="flex-1 overflow-y-auto bg-slate-50/30">
-          <div className="p-6 max-w-5xl mx-auto">
+          <div
+            className={cn(
+              "p-6 mx-auto",
+              activeView === "home" ? "max-w-7xl" : "max-w-5xl",
+            )}
+          >
             {/* Loading State */}
-            {isLoadingSection && (
+            {(isLoadingSection || isLoadingHomeData) && (
               <div className="flex flex-col items-center justify-center py-20">
                 <Loader2 className="size-8 animate-spin text-primary mb-4" />
-                <p className="text-muted-foreground">Loading content...</p>
+                <p className="text-muted-foreground">
+                  {isLoadingHomeData
+                    ? "Loading course analytics..."
+                    : "Loading content..."}
+                </p>
               </div>
             )}
 
+            {/* Course Home Analytics View */}
+            {!isLoadingSection &&
+              !isLoadingHomeData &&
+              currentCourse &&
+              activeView === "home" && (
+                <CourseHome
+                  course={currentCourse}
+                  sections={sections.map((s) => ({
+                    id: s.id,
+                    title: s.title,
+                    isCompleted: s.isCompleted,
+                    sectionNumber: s.sectionNumber,
+                  }))}
+                  sectionContents={allSectionContents}
+                />
+              )}
+
             {/* Empty State - No Course Selected */}
-            {!isLoadingSection && !currentCourse && (
+            {!isLoadingSection && !currentCourse && activeView !== "home" && (
               <EmptyState
                 icon={<BookOpen className="size-12" />}
                 title="Welcome to CleverCourse"
@@ -142,17 +212,21 @@ export default function CoursePage() {
             )}
 
             {/* Empty State - No Section Selected */}
-            {!isLoadingSection && currentCourse && !currentSection && (
-              <EmptyState
-                icon={<BookOpen className="size-12" />}
-                title="No Section Selected"
-                description={
-                  currentCourse.status === "generating"
-                    ? "Your course is being generated. Please wait..."
-                    : "Select a section from the sidebar to view its content"
-                }
-              />
-            )}
+            {!isLoadingSection &&
+              currentCourse &&
+              !currentSection &&
+              activeView !== "home" &&
+              activeView !== "network" && (
+                <EmptyState
+                  icon={<BookOpen className="size-12" />}
+                  title="No Section Selected"
+                  description={
+                    currentCourse.status === "generating"
+                      ? "Your course is being generated. Please wait..."
+                      : "Select a section from the sidebar to view its content"
+                  }
+                />
+              )}
 
             {/* Article View */}
             {!isLoadingSection &&

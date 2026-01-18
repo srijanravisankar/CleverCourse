@@ -20,6 +20,40 @@ Welcome to the CleverCourse gamification engine! This guide will help you test a
 
 ## 🎯 Features to Test
 
+### 0. 🏠 Course Home - Analytics Dashboard (NEW!)
+
+**Location:** Click the purple "Course Home" button in the sidebar (above Curriculum)
+
+**Note:** This button is only clickable after ALL sections of a course have been generated.
+
+**How to test:**
+
+1. Create a new course and wait for all sections to generate
+2. Once complete, click the **"📊 Course Home"** button
+3. View the comprehensive analytics dashboard
+
+**Expected behavior:**
+
+- ✅ Beautiful gradient header with course title & progress ring
+- ✅ 4 stat cards showing: Sections Completed, Article Pages, Flashcards, Quiz Questions
+- ✅ Content Distribution panel with colored progress bars
+- ✅ Section Progress list showing completion status per section
+- ✅ Study Tips card with helpful learning advice
+- ✅ Course Details card showing level, tone, etc.
+- ✅ If no content yet: Shows "Start Your Learning Journey!" empty state
+
+**Analytics Shown:**
+
+- Total sections and completion percentage
+- Article pages count with estimated read time
+- Flashcard count
+- Quiz breakdown (MCQ, True/False, Fill-in-blanks)
+- Mind maps count
+- Per-section content breakdown
+- Estimated total learning time
+
+---
+
 ### 1. 📖 Article Pages - "Mark Complete" Button
 
 **Location:** Article View (when viewing course content)

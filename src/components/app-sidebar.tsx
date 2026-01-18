@@ -25,10 +25,10 @@ import {
   Sun,
   RefreshCw,
   Trash2,
+  BarChart3,
 } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { logOut } from "@/app/actions/auth";
-import { SidebarGamification } from "@/components/gamification";
 
 import { CreateCourseDialog } from "@/components/course/CreateCourseDialog";
 import {
@@ -462,9 +462,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
               courseSidebarOpen ? "w-[280px] border-r" : "w-0",
             )}
           >
-            {/* Gamification Stats */}
-            <SidebarGamification />
-
             {/* Header */}
             <div className="border-b p-4 shrink-0">
               <div className="flex items-center justify-between">
@@ -497,6 +494,67 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
               </div>
             </div>
 
+            {/* Course Home & Eagle View Buttons */}
+            {currentCourse && (
+              <div className="p-2 border-b flex gap-2">
+                {/* Course Home Button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        // Only allow if course is ready (has sections)
+                        if (
+                          sections.length > 0 &&
+                          pendingSections.length === 0
+                        ) {
+                          const setActiveView =
+                            useCourseStore.getState().setActiveView;
+                          setActiveView("home");
+                        }
+                      }}
+                      disabled={
+                        sections.length === 0 || pendingSections.length > 0
+                      }
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-lg transition-all",
+                        sections.length > 0 && pendingSections.length === 0
+                          ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700 shadow-md hover:shadow-lg cursor-pointer"
+                          : "bg-muted text-muted-foreground cursor-not-allowed opacity-60",
+                      )}
+                    >
+                      <BarChart3 className="size-4" />
+                      <span>Course Home</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {sections.length === 0 || pendingSections.length > 0
+                      ? "Complete course generation to view analytics"
+                      : "View course analytics & progress"}
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Eagle View Button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        const setActiveView =
+                          useCourseStore.getState().setActiveView;
+                        setActiveView("network");
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 rounded-lg transition-colors"
+                    >
+                      <Network className="size-4" />
+                      <span>Eagle</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    View course structure
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            )}
+
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
               <div className="p-2">
@@ -504,20 +562,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Curriculum
                   </span>
-                  {currentCourse && (
-                    <button
-                      onClick={() => {
-                        const setActiveView =
-                          useCourseStore.getState().setActiveView;
-                        setActiveView("network");
-                      }}
-                      className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium bg-red-300 border-1 border-red-600 hover:text-foreground hover:bg-red-400 rounded-md transition-colors"
-                      title="View Course Network Graph"
-                    >
-                      <Network className="size-3.5" />
-                      <span>Eagle View</span>
-                    </button>
-                  )}
                 </div>
 
                 {!currentCourse ? (
