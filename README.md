@@ -1,3 +1,5 @@
+<img width="975" height="230" alt="image" src="https://github.com/user-attachments/assets/010b22c5-29bd-4af6-969c-f676c29b12b3" />
+
 # CleverCourse
 
 An AI-powered learning platform that generates personalized courses with study materials, quizzes, and gamification features.
