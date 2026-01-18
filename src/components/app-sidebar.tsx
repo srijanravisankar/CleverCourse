@@ -248,11 +248,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                         >
                           {/* Active indicator */}
                           {isActive && (
-                            <div className="absolute -left-2 w-0.5 h-7 bg-white rounded-r-full" />
+                            <div className="absolute -left-2 w-0.5 h-7 bg-zinc-600 rounded-r-full" />
                           )}
                           {/* Hover indicator */}
                           {!isActive && (
-                            <div className="absolute -left-2 w-0.5 h-0 bg-white rounded-r-full transition-all duration-200 group-hover:h-2.5" />
+                            <div className="absolute -left-2 w-0.5 h-0 bg-zinc-600 rounded-r-full transition-all duration-200 group-hover:h-2.5" />
                           )}
                           {initials}
                         </button>
@@ -325,8 +325,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
           {/* ============================================ */}
           <div
             className={cn(
-              "flex flex-col bg-sidebar border-r transition-all duration-300 ease-in-out overflow-hidden shrink-0",
-              courseSidebarOpen ? "w-[280px]" : "w-0",
+              "flex flex-col bg-sidebar transition-all duration-300 ease-in-out overflow-hidden shrink-0",
+              courseSidebarOpen ? "w-[280px] border-r" : "w-0",
             )}
           >
             {/* Header */}
@@ -353,7 +353,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                       onClick={toggleCourseSidebar}
                       className="p-0.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <PanelLeftClose className="size-3" />
+                      <PanelLeftClose className="size-4" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right">Close sidebar</TooltipContent>
@@ -375,7 +375,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                           useCourseStore.getState().setActiveView;
                         setActiveView("network");
                       }}
-                      className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                      className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium bg-red-300 border-1 border-red-600 hover:text-foreground hover:bg-red-400 rounded-md transition-colors"
                       title="View Course Network Graph"
                     >
                       <Network className="size-3.5" />
@@ -406,6 +406,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                         key={section.id}
                         section={section}
                         index={index}
+                        isLast={index === sections.length - 1}
                         isActive={activeSectionId === section.id}
                         onSelect={() => handleSelectSection(section)}
                       />
@@ -418,14 +419,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
 
           {/* Toggle button when sidebar is closed */}
           {!courseSidebarOpen && (
-            <div className="flex items-start pt-4 px-2 bg-sidebar border-r shrink-0">
+            <div className="flex items-start pt-4 px-2 bg-sidebar shrink-0">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={toggleCourseSidebar}
                     className="p-0.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <PanelLeft className="size-3" />
+                    <PanelLeft className="size-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">Open sidebar</TooltipContent>
@@ -445,11 +446,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
 function CourseSectionItem({
   section,
   index,
+  isLast,
   isActive,
   onSelect,
 }: {
   section: CourseSection;
   index: number;
+  isLast: boolean;
   isActive: boolean;
   onSelect: () => void;
 }) {
@@ -463,7 +466,7 @@ function CourseSectionItem({
   };
 
   return (
-    <Collapsible defaultOpen={isActive} className="group/collapsible">
+    <Collapsible defaultOpen={true} className="group/collapsible">
       <div className="flex flex-col">
         <CollapsibleTrigger asChild>
           <button
@@ -477,10 +480,10 @@ function CourseSectionItem({
           >
             <div
               className={cn(
-                "flex items-center justify-center size-6 rounded-full text-xs font-bold shrink-0 transition-colors",
+                "flex items-center justify-center size-6 rounded-full text-xs font-bold shrink-0 transition-colors -ml-1",
                 isActive
                   ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground group-hover/collapsible:bg-primary group-hover/collapsible:text-primary-foreground",
+                  : "bg-primary/100 text-primary-foreground",
               )}
             >
               {index + 1}
@@ -491,7 +494,12 @@ function CourseSectionItem({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="ml-4 pl-4 border-l border-border mt-1 mb-2 flex flex-col gap-0.5">
+          <div
+            className={cn(
+              "ml-4 pl-4 mt-1 mb-2 flex flex-col gap-0.5",
+              !isLast && "border-l border-zinc-700",
+            )}
+          >
             {/* Article */}
             <button
               onClick={() => handleSubItemClick("article")}
@@ -513,7 +521,7 @@ function CourseSectionItem({
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="ml-4 pl-2 border-l border-border mt-1 flex flex-col gap-0.5">
+                <div className="ml-4 pl-2 border-l border-zinc-700 mt-1 flex flex-col gap-0.5">
                   <button
                     onClick={() => handleSubItemClick("mindmap")}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
@@ -544,7 +552,7 @@ function CourseSectionItem({
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="ml-4 pl-2 border-l border-border mt-1 flex flex-col gap-0.5">
+                <div className="ml-4 pl-2 border-l border-zinc-700 mt-1 flex flex-col gap-0.5">
                   <button
                     onClick={() => handleSubItemClick("mcq")}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
