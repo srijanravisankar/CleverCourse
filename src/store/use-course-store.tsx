@@ -61,6 +61,12 @@ interface CourseState {
   activeSectionId: string | null;
   setActiveSectionId: (id: string | null) => void;
 
+  // SECTION CONTENT CACHE - stores full content for sections we've already loaded
+  sectionContentCache: Map<string, CourseSectionWithContent>;
+  getCachedSectionContent: (sectionId: string) => CourseSectionWithContent | undefined;
+  cacheSectionContent: (section: CourseSectionWithContent) => void;
+  clearSectionContentCache: () => void;
+
   // Loading states
   isLoadingCourses: boolean;
   setIsLoadingCourses: (loading: boolean) => void;
@@ -83,12 +89,13 @@ const initialState = {
   pendingSections: [] as PendingSection[],
   currentSection: null,
   activeSectionId: null,
+  sectionContentCache: new Map<string, CourseSectionWithContent>(),
   isLoadingCourses: false,
   isLoadingSection: false,
   error: null,
 };
 
-export const useCourseStore = create<CourseState>((set) => ({
+export const useCourseStore = create<CourseState>((set, get) => ({
   ...initialState,
 
   setActiveView: (view) => set({ activeView: view }),
@@ -115,6 +122,8 @@ export const useCourseStore = create<CourseState>((set) => ({
       // Reset section state when changing course
       currentSection: null,
       activeSectionId: null,
+      // Clear cache when switching courses
+      sectionContentCache: new Map(),
     }),
 
   setSections: (sections) => set({ sections }),
@@ -144,10 +153,23 @@ export const useCourseStore = create<CourseState>((set) => ({
   setCurrentSection: (section) => set({ currentSection: section }),
   setActiveSectionId: (id) => set({ activeSectionId: id }),
 
+  // Section content cache methods
+  getCachedSectionContent: (sectionId: string) => {
+    return get().sectionContentCache.get(sectionId);
+  },
+  cacheSectionContent: (section: CourseSectionWithContent) => {
+    set((state) => {
+      const newCache = new Map(state.sectionContentCache);
+      newCache.set(section.id, section);
+      return { sectionContentCache: newCache };
+    });
+  },
+  clearSectionContentCache: () => set({ sectionContentCache: new Map() }),
+
   setIsLoadingCourses: (loading) => set({ isLoadingCourses: loading }),
   setIsLoadingSection: (loading) => set({ isLoadingSection: loading }),
 
   setError: (error) => set({ error }),
 
-  reset: () => set(initialState),
+  reset: () => set({ ...initialState, sectionContentCache: new Map() }),
 }));

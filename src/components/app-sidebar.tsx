@@ -114,6 +114,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
     isLoadingCourses,
     error,
     setError,
+    getCachedSectionContent,
+    cacheSectionContent,
   } = useCourseStore();
 
   // Fetch courses on mount
@@ -166,10 +168,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
   // Handle section selection
   const handleSelectSection = async (section: CourseSection) => {
     setActiveSectionId(section.id);
+    
+    // Check cache first - if we have the content, use it immediately without loading state
+    const cached = getCachedSectionContent(section.id);
+    if (cached) {
+      setCurrentSection(cached);
+      return;
+    }
+    
+    // Not in cache, need to fetch from server
     setIsLoadingSection(true);
     try {
       const sectionWithContent = await getSectionWithContent(section.id);
       if (sectionWithContent) {
+        // Cache it for future use
+        cacheSectionContent(sectionWithContent);
         setCurrentSection(sectionWithContent);
       }
     } catch (err) {
@@ -196,6 +209,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
               result.sectionId,
             );
             if (sectionWithContent) {
+              // Cache the content so clicking on this section is instant
+              cacheSectionContent(sectionWithContent);
+              
               addSection({
                 id: sectionWithContent.id,
                 courseId: sectionWithContent.courseId,
@@ -229,7 +245,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     },
-    [updatePendingSection, addSection, removePendingSection],
+    [updatePendingSection, addSection, removePendingSection, cacheSectionContent],
   );
 
   // Handle course creation success

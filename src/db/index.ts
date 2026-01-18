@@ -13,14 +13,22 @@ if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });
 }
 
-// Create the SQLite database instance
-const sqlite = new Database(DB_PATH);
+// Create the SQLite database instance with timeout for busy handling
+const sqlite = new Database(DB_PATH, {
+  timeout: 30000, // 30 second timeout for busy database
+});
 
-// Enable WAL mode for better performance
+// Enable WAL mode for better concurrent read/write performance
 sqlite.pragma("journal_mode = WAL");
+
+// Set busy timeout to wait for locks instead of failing immediately
+sqlite.pragma("busy_timeout = 30000");
 
 // Enable foreign keys
 sqlite.pragma("foreign_keys = ON");
+
+// Set synchronous mode to NORMAL for better performance while still safe
+sqlite.pragma("synchronous = NORMAL");
 
 // Create the Drizzle ORM instance with schema
 export const db = drizzle(sqlite, { schema });
