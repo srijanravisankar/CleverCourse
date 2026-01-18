@@ -18,12 +18,11 @@ import {
   AlertCircle,
   Info,
   Loader2,
-  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { generateFirstSection, type FileUpload } from "@/lib/course-generator";
+import { createCourseOnly, type FileUpload } from "@/lib/course-generator";
 import type { CourseLevel, CourseTone } from "@/db/types";
 
 interface CreateCourseDialogProps {
@@ -126,7 +125,7 @@ export function CreateCourseDialog({
     }
 
     setGenerationStatus("preparing");
-    setGenerationMessage("Preparing course generation...");
+    setGenerationMessage("Creating course...");
     setGenerationError("");
 
     try {
@@ -145,13 +144,8 @@ export function CreateCourseDialog({
         }
       }
 
-      setGenerationStatus("generating");
-      setGenerationMessage(
-        `Generating first section... You'll be able to start learning as soon as it's ready!`,
-      );
-
-      // Generate ONLY the first section (fast response)
-      const result = await generateFirstSection(
+      // Create course record only (no section generation - that happens in sidebar)
+      const result = await createCourseOnly(
         {
           topic: formData.topic,
           level: formData.level,
@@ -170,33 +164,28 @@ export function CreateCourseDialog({
       );
 
       if (result.success && result.courseId) {
-        setGenerationStatus("complete");
-        setGenerationMessage("First section ready! Opening course...");
-
-        // Call the callback with courseId and section count for background generation
+        // Call the callback with courseId and section count
+        // The sidebar will handle generating ALL sections (including section 1)
         if (onCourseCreated) {
           onCourseCreated(result.courseId, parseInt(formData.sectionCount));
         }
 
-        // Close after a short delay
-        setTimeout(() => {
-          onClose();
-          // Reset form
-          setFormData({
-            topic: "",
-            level: "beginner",
-            goal: "",
-            tone: "professional",
-            sectionCount: "5",
-            targetAudience: "",
-            prerequisites: "",
-            timeCommitment: "30",
-            startDate: "",
-            endDate: "",
-          });
-          setUploadedFiles([]);
-          setGenerationStatus("idle");
-        }, 1000);
+        // Close immediately and reset form
+        onClose();
+        setFormData({
+          topic: "",
+          level: "beginner",
+          goal: "",
+          tone: "professional",
+          sectionCount: "5",
+          targetAudience: "",
+          prerequisites: "",
+          timeCommitment: "30",
+          startDate: "",
+          endDate: "",
+        });
+        setUploadedFiles([]);
+        setGenerationStatus("idle");
       } else {
         setGenerationStatus("error");
         // Parse error message for user-friendly display
@@ -207,13 +196,7 @@ export function CreateCourseDialog({
           errorMsg.includes("Too Many Requests")
         ) {
           errorMsg =
-            "API rate limit reached. The system will retry automatically, but you may need to wait a few minutes before trying again.";
-        } else if (
-          errorMsg.includes("after") &&
-          errorMsg.includes("attempts")
-        ) {
-          errorMsg =
-            "Generation timed out due to API limits. Please wait a few minutes and try again with fewer sections.";
+            "API rate limit reached. Please wait a few minutes before trying again.";
         }
         setGenerationError(errorMsg);
       }
@@ -338,23 +321,8 @@ export function CreateCourseDialog({
               </p>
               <div className="flex items-center gap-2 mt-6 text-sm text-muted-foreground">
                 <Sparkles className="size-4 text-purple-600 animate-pulse" />
-                <span>AI is generating personalized content...</span>
+                <span>Setting up your personalized learning experience...</span>
               </div>
-            </div>
-          )}
-
-          {/* Success Overlay */}
-          {generationStatus === "complete" && (
-            <div className="absolute inset-0 bg-background/95 z-10 flex flex-col items-center justify-center p-8">
-              <div className="size-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircle2 className="size-10 text-green-600" />
-              </div>
-              <h3 className="text-xl font-bold mt-6 text-center text-green-600">
-                Course Created!
-              </h3>
-              <p className="text-muted-foreground text-center mt-2">
-                {generationMessage}
-              </p>
             </div>
           )}
 
