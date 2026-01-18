@@ -508,6 +508,49 @@ export async function onFlashcardReviewed(
   return awardXp("flashcard_reviewed", flashcardId, "flashcard");
 }
 
+/**
+ * Award XP for completing an article page
+ */
+export async function onArticleCompleted(
+  articleId: string,
+): Promise<AwardXpResult> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+
+  return awardXp("article_completed", articleId, "article");
+}
+
+/**
+ * Award XP for reviewing/understanding a mind map
+ */
+export async function onMindmapReviewed(
+  mindmapId: string,
+): Promise<AwardXpResult> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+
+  return awardXp("mindmap_reviewed", mindmapId, "mindmap");
+}
+
+/**
+ * Award XP for a correct quiz answer (called per correct answer)
+ */
+export async function onQuizAnswerCorrect(
+  questionId: string,
+  questionType: "mcq" | "tf" | "fill",
+): Promise<AwardXpResult> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+
+  return awardXp("quiz_answer_correct", questionId, questionType);
+}
+
 // ============================================================================
 // DATA RETRIEVAL
 // ============================================================================

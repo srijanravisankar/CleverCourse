@@ -20,6 +20,12 @@ import { Button } from "@/components/ui/button";
 import { TrueFalse } from "@/components/quiz/TrueFalse";
 import { FillInTheBlanks } from "@/components/quiz/FillInTheBlanks";
 import { Loader2, BookOpen } from "lucide-react";
+import {
+  onQuizAnswerCorrect,
+  onArticleCompleted,
+  onMindmapReviewed,
+  onFlashcardReviewed,
+} from "@/app/actions/gamification";
 
 export default function CoursePage() {
   const {
@@ -241,6 +247,13 @@ export default function CoursePage() {
                         currentSection.mcqQuestions[currentQuizIndex].answer
                       }
                       onNext={() => setCurrentQuizIndex((prev) => prev + 1)}
+                      onCorrectAnswer={() => {
+                        const questionId =
+                          currentSection.mcqQuestions[currentQuizIndex].id;
+                        onQuizAnswerCorrect(questionId, "mcq").catch(
+                          console.error,
+                        );
+                      }}
                     />
                   ) : (
                     <QuizCompleteView
@@ -279,6 +292,14 @@ export default function CoursePage() {
                           .explanation
                       }
                       onNext={() => setCurrentQuizIndex((prev) => prev + 1)}
+                      onCorrectAnswer={() => {
+                        const questionId =
+                          currentSection.trueFalseQuestions[currentQuizIndex]
+                            .id;
+                        onQuizAnswerCorrect(questionId, "tf").catch(
+                          console.error,
+                        );
+                      }}
                     />
                   ) : (
                     <QuizCompleteView
@@ -312,6 +333,13 @@ export default function CoursePage() {
                           .missingWord
                       }
                       onNext={() => setCurrentQuizIndex((prev) => prev + 1)}
+                      onCorrectAnswer={() => {
+                        const questionId =
+                          currentSection.fillUpQuestions[currentQuizIndex].id;
+                        onQuizAnswerCorrect(questionId, "fill").catch(
+                          console.error,
+                        );
+                      }}
                     />
                   ) : (
                     <QuizCompleteView

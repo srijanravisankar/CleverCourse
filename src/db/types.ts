@@ -249,7 +249,10 @@ export type XpReason =
   | "achievement_unlocked"
   | "perfect_quiz"
   | "daily_login"
-  | "level_up_bonus";
+  | "level_up_bonus"
+  | "article_completed"
+  | "mindmap_reviewed"
+  | "quiz_answer_correct";
 
 /**
  * Result of awarding XP to a user

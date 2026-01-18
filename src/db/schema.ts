@@ -486,6 +486,9 @@ export const xpTransactions = sqliteTable("xp_transactions", {
       "perfect_quiz",
       "daily_login",
       "level_up_bonus",
+      "article_completed",
+      "mindmap_reviewed",
+      "quiz_answer_correct",
     ],
   }).notNull(),
 

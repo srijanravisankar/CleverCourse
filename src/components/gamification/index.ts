@@ -6,3 +6,4 @@ export { SparksBadge } from "./SparksBadge";
 export { StreakFreezeShop } from "./StreakFreezeShop";
 export { GamificationProvider } from "./GamificationProvider";
 export { SidebarGamification } from "./SidebarGamification";
+export { XPPopup, MiniXPBadge } from "./XPPopup";

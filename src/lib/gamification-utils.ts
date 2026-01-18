@@ -25,6 +25,9 @@ export const XP_REWARDS = {
   perfect_quiz: 75, // Bonus for 100% quiz
   daily_login: 10,
   level_up_bonus: 25, // Bonus XP per level gained
+  article_completed: 15, // Per article page completed
+  mindmap_reviewed: 20, // Understanding a mind map
+  quiz_answer_correct: 10, // Bonus per correct answer
 } as const;
 
 // Sparks rewards
