@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import {
   ReactFlow,
   Background,
@@ -27,6 +27,7 @@ import {
   FileText,
 } from "lucide-react";
 import { useCourseStore, ViewType } from "@/store/use-course-store";
+import { getSectionWithContent } from "@/app/actions/courses";
 
 import "@xyflow/react/dist/style.css";
 
@@ -52,13 +53,43 @@ const colors = {
  */
 function GraphNode({ data }: { data: any }) {
   const Icon = data.icon;
-  const setActiveView = useCourseStore((state) => state.setActiveView);
+  const {
+    setActiveView,
+    setActiveSectionId,
+    setCurrentSection,
+    setIsLoadingSection,
+  } = useCourseStore();
 
-  const handleClick = () => {
+  const handleClick = useCallback(async () => {
+    // If this node has a section ID, we need to select that section first
+    if (data.sectionId) {
+      setActiveSectionId(data.sectionId);
+      setIsLoadingSection(true);
+
+      try {
+        const sectionWithContent = await getSectionWithContent(data.sectionId);
+        if (sectionWithContent) {
+          setCurrentSection(sectionWithContent);
+        }
+      } catch (err) {
+        console.error("Error fetching section content:", err);
+      } finally {
+        setIsLoadingSection(false);
+      }
+    }
+
+    // Then set the view type if specified
     if (data.viewType) {
       setActiveView(data.viewType as ViewType);
     }
-  };
+  }, [
+    data.sectionId,
+    data.viewType,
+    setActiveView,
+    setActiveSectionId,
+    setCurrentSection,
+    setIsLoadingSection,
+  ]);
 
   const getNodeStyles = () => {
     switch (data.level) {
@@ -248,23 +279,25 @@ export function CourseGraph({ courseData }: CourseGraphProps) {
         sectionAngle,
       );
 
-      const sectionId = `node-${nodeId++}`;
+      const sectionNodeId = `node-${nodeId++}`;
       nodes.push({
-        id: sectionId,
+        id: sectionNodeId,
         type: "graphNode",
         data: {
           label: section.title,
           color: colors.section,
           level: 1,
-          description: `📖 Section ${sectionIdx + 1}`,
+          description: `📖 Section ${sectionIdx + 1} - Click to view`,
+          sectionId: section.id, // Pass actual section ID for navigation
+          viewType: "article" as ViewType, // Default to article view when clicking section
         },
         position: sectionPos,
       });
 
       edges.push({
-        id: `e-${rootId}-${sectionId}`,
+        id: `e-${rootId}-${sectionNodeId}`,
         source: rootId,
-        target: sectionId,
+        target: sectionNodeId,
         animated: true,
         style: { stroke: colors.edge, strokeWidth: 3 },
         markerEnd: {
@@ -311,6 +344,7 @@ export function CourseGraph({ courseData }: CourseGraphProps) {
           label: "Study Material",
           color: colors.study,
           icon: BriefcaseBusiness,
+          viewType: "mindmap" as ViewType, // Default to mindmap view
           description: "📚 Practice materials",
           children: [
             {
@@ -333,27 +367,27 @@ export function CourseGraph({ courseData }: CourseGraphProps) {
           label: "Quiz",
           color: colors.quiz,
           icon: Gamepad2,
-          viewType: "quiz" as ViewType,
+          viewType: "mcq" as ViewType, // Default to MCQ view
           description: "🎯 Test knowledge",
           children: [
             {
               label: "MCQs",
               icon: ListChecks,
-              viewType: "quiz" as ViewType,
+              viewType: "mcq" as ViewType,
               color: colors.mcq,
               description: "✅ Multiple choice",
             },
             {
               label: "True/False",
               icon: ToggleLeft,
-              viewType: "quiz" as ViewType,
+              viewType: "tf" as ViewType,
               color: colors.trueFalse,
               description: "⚡ Quick decisions",
             },
             {
               label: "Fill-ups",
               icon: Type,
-              viewType: "quiz" as ViewType,
+              viewType: "fill" as ViewType,
               color: colors.fillups,
               description: "✏️ Complete sentence",
             },
@@ -387,13 +421,14 @@ export function CourseGraph({ courseData }: CourseGraphProps) {
             icon: content.icon,
             viewType: content.viewType,
             description: content.description,
+            sectionId: section.id, // Pass section ID for navigation
           },
           position: contentPos,
         });
 
         edges.push({
-          id: `e-${sectionId}-${contentId}`,
-          source: sectionId,
+          id: `e-${sectionNodeId}-${contentId}`,
+          source: sectionNodeId,
           target: contentId,
           style: { stroke: content.color, strokeWidth: 2.5 },
           markerEnd: {
@@ -432,6 +467,7 @@ export function CourseGraph({ courseData }: CourseGraphProps) {
                 icon: child.icon,
                 viewType: child.viewType,
                 description: child.description || `View ${child.label}`,
+                sectionId: section.id, // Pass section ID for navigation
               },
               position: childPos,
             });
