@@ -21,8 +21,6 @@ import {
   GraduationCap,
   User,
   LogOut,
-  Moon,
-  Sun,
   RefreshCw,
   Trash2,
   BarChart3,
@@ -336,7 +334,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
           {/* ============================================ */}
           {/* FIRST SIDEBAR: Discord-style Course Icons   */}
           {/* ============================================ */}
-          <div className="flex flex-col w-11 bg-zinc-900 py-1.5 gap-1 items-center border-r border-zinc-800 shrink-0">
+          <div className="flex flex-col w-14 bg-zinc-900 py-1.5 px-1 gap-1 items-center border-r border-zinc-800 shrink-0">
             {/* App Logo */}
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-600 text-white mt-1 hover:rounded-md transition-all duration-200 cursor-pointer">
               <GraduationCap className="size-6" />
@@ -345,7 +343,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
             <div className="w-5 h-[1px] bg-zinc-700 rounded-full mb-2 mt-2" />
 
             {/* Course Icons */}
-            <div className="flex flex-col gap-2 flex-1 overflow-y-auto scrollbar-hide">
+            <div className="flex flex-col gap-2 flex-1 overflow-y-auto overflow-x-visible scrollbar-hide px-1 pt-1">
               {isLoadingCourses && courses.length === 0 ? (
                 <div className="flex items-center justify-center w-8 h-8">
                   <Loader2 className="size-3.5 animate-spin text-zinc-400" />
@@ -379,7 +377,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                             colors.bg,
                             colors.text,
                             isActive
-                              ? "rounded-md"
+                              ? "rounded-md ring-2 ring-white ring-offset-2 ring-offset-zinc-900"
                               : "rounded-[16px] hover:rounded-md",
                           )}
                         >
@@ -440,19 +438,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuLabel className="text-xs font-normal text-muted-foreground py-1.5">
-                    Theme
-                  </DropdownMenuLabel>
-                  <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                    <Sun className="size-4" />
-                    <span>Light</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                    <Moon className="size-4" />
-                    <span>Dark</span>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
                     className="flex items-center gap-2 cursor-pointer text-red-400"
@@ -471,7 +456,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
           <div
             className={cn(
               "flex flex-col bg-sidebar transition-all duration-300 ease-in-out overflow-hidden shrink-0",
-              courseSidebarOpen ? "w-[280px] border-r" : "w-0",
+              courseSidebarOpen ? "w-[287px] border-r" : "w-0",
             )}
           >
             {/* Header */}
@@ -679,13 +664,28 @@ function CourseSectionItem({
   isActive: boolean;
   onSelect: () => void;
 }) {
-  const setActiveView = useCourseStore((state) => state.setActiveView);
+  const { setActiveView, activeView } = useCourseStore();
 
   const handleSubItemClick = (view: ViewType) => {
     if (!isActive) {
       onSelect();
     }
     setActiveView(view);
+  };
+
+  // Helper to get the appropriate classes for each menu item
+  const getItemClasses = (
+    view: ViewType,
+    hoverBg: string,
+    activeBg: string,
+  ) => {
+    const isSelected = isActive && activeView === view;
+    return cn(
+      "flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors",
+      isSelected
+        ? `${activeBg} text-foreground`
+        : `text-muted-foreground hover:text-foreground ${hoverBg}`,
+    );
   };
 
   return (
@@ -726,14 +726,18 @@ function CourseSectionItem({
             {/* Article */}
             <button
               onClick={() => handleSubItemClick("article")}
-              className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+              className={getItemClasses(
+                "article",
+                "hover:bg-green-500/10",
+                "bg-green-500/20",
+              )}
             >
               <BookOpen className="size-4 text-green-600" />
               <span>Article</span>
             </button>
 
             {/* Study Material Dropdown */}
-            <Collapsible className="group/study">
+            <Collapsible defaultOpen={true} className="group/study">
               <CollapsibleTrigger asChild>
                 <button className="flex items-center justify-between w-full px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">
                   <div className="flex items-center gap-2">
@@ -747,14 +751,22 @@ function CourseSectionItem({
                 <div className="ml-4 pl-2 border-l border-zinc-700 mt-1 flex flex-col gap-0.5">
                   <button
                     onClick={() => handleSubItemClick("mindmap")}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                    className={getItemClasses(
+                      "mindmap",
+                      "hover:bg-pink-500/10",
+                      "bg-pink-500/20",
+                    )}
                   >
                     <Brain className="size-4 text-pink-600" />
                     <span>Mind Map</span>
                   </button>
                   <button
                     onClick={() => handleSubItemClick("flashcards")}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                    className={getItemClasses(
+                      "flashcards",
+                      "hover:bg-yellow-500/10",
+                      "bg-yellow-500/20",
+                    )}
                   >
                     <Layers className="size-4 text-yellow-600" />
                     <span>Flashcards</span>
@@ -764,7 +776,7 @@ function CourseSectionItem({
             </Collapsible>
 
             {/* Quiz Dropdown */}
-            <Collapsible className="group/quiz">
+            <Collapsible defaultOpen={true} className="group/quiz">
               <CollapsibleTrigger asChild>
                 <button className="flex items-center justify-between w-full px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">
                   <div className="flex items-center gap-2">
@@ -778,21 +790,33 @@ function CourseSectionItem({
                 <div className="ml-4 pl-2 border-l border-zinc-700 mt-1 flex flex-col gap-0.5">
                   <button
                     onClick={() => handleSubItemClick("mcq")}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                    className={getItemClasses(
+                      "mcq",
+                      "hover:bg-purple-500/10",
+                      "bg-purple-500/20",
+                    )}
                   >
                     <ListChecks className="size-4 text-purple-600" />
                     <span>Multiple Choice</span>
                   </button>
                   <button
                     onClick={() => handleSubItemClick("tf")}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                    className={getItemClasses(
+                      "tf",
+                      "hover:bg-amber-500/10",
+                      "bg-amber-500/20",
+                    )}
                   >
                     <ToggleLeft className="size-4 text-amber-700" />
                     <span>True / False</span>
                   </button>
                   <button
                     onClick={() => handleSubItemClick("fill")}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
+                    className={getItemClasses(
+                      "fill",
+                      "hover:bg-stone-500/10",
+                      "bg-stone-500/20",
+                    )}
                   >
                     <Type className="size-4 text-stone-600" />
                     <span>Fill Ups</span>
