@@ -212,11 +212,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
     }
   };
 
-  // Generate remaining sections in background
-  const generateRemainingSections = React.useCallback(
+  // Generate all sections in background (including section 1)
+  const generateAllSections = React.useCallback(
     async (courseId: string, totalSections: number) => {
-      // Generate sections 2 through totalSections sequentially
-      for (let sectionNum = 2; sectionNum <= totalSections; sectionNum++) {
+      // Generate all sections sequentially, starting from 1
+      for (let sectionNum = 1; sectionNum <= totalSections; sectionNum++) {
         // Update status to generating
         updatePendingSection(sectionNum, { status: "generating" });
 
@@ -243,6 +243,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                 createdAt: sectionWithContent.createdAt,
                 updatedAt: sectionWithContent.updatedAt,
               });
+
+              // If this is the first section, auto-select it
+              if (sectionNum === 1) {
+                setActiveSectionId(sectionWithContent.id);
+                setCurrentSection(sectionWithContent);
+              }
             }
             // Remove from pending
             removePendingSection(sectionNum);
@@ -270,6 +276,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
       addSection,
       removePendingSection,
       cacheSectionContent,
+      setActiveSectionId,
+      setCurrentSection,
     ],
   );
 
@@ -284,12 +292,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
 
       const newCourse = fetchedCourses.find((c) => c.id === courseId);
       if (newCourse) {
-        await handleSelectCourse(newCourse);
+        // Set the course as current (without loading sections since none exist yet)
+        setCurrentCourse(newCourse);
+        setSections([]);
+        setCurrentSection(null);
+        setActiveSectionId(null);
 
-        // If we have more than 1 section, set up pending sections for background generation
-        if (sectionCount && sectionCount > 1) {
+        // Set up pending sections for ALL sections (starting from 1)
+        if (sectionCount && sectionCount >= 1) {
           const pendingSectionsList: PendingSection[] = [];
-          for (let i = 2; i <= sectionCount; i++) {
+          for (let i = 1; i <= sectionCount; i++) {
             pendingSectionsList.push({
               sectionNumber: i,
               status: "pending",
@@ -297,8 +309,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
           }
           setPendingSections(pendingSectionsList);
 
-          // Start background generation (non-blocking)
-          generateRemainingSections(courseId, sectionCount);
+          // Start background generation for all sections (non-blocking)
+          generateAllSections(courseId, sectionCount);
         }
       }
     } catch (err) {
@@ -538,18 +550,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => {
-                        const setActiveView =
-                          useCourseStore.getState().setActiveView;
-                        setActiveView("network");
+                        if (
+                          sections.length > 0 &&
+                          pendingSections.length === 0
+                        ) {
+                          const setActiveView =
+                            useCourseStore.getState().setActiveView;
+                          setActiveView("network");
+                        }
                       }}
-                      className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 rounded-lg transition-colors"
+                      disabled={
+                        sections.length === 0 || pendingSections.length > 0
+                      }
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                        sections.length > 0 && pendingSections.length === 0
+                          ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 cursor-pointer"
+                          : "bg-muted text-muted-foreground cursor-not-allowed opacity-60",
+                      )}
                     >
                       <Network className="size-4" />
                       <span>Eagle</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    View course structure
+                    {sections.length === 0 || pendingSections.length > 0
+                      ? "Complete course generation to view graph"
+                      : "View course structure"}
                   </TooltipContent>
                 </Tooltip>
               </div>

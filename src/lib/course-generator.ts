@@ -759,6 +759,55 @@ export async function generateFirstSection(
 }
 
 /**
+ * Create course record and save uploaded files without generating any sections.
+ * This allows the UI to close immediately and show loading state in the sidebar.
+ */
+export async function createCourseOnly(
+  input: CreateCourseInput,
+  files: FileUpload[] = [],
+): Promise<{ success: boolean; courseId?: string; error?: string }> {
+  try {
+    // Get the current user ID from the session
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "Not authenticated. Please log in." };
+    }
+
+    // Step 1: Create the course record
+    const course = await courseRepository.create({
+      userId,
+      title: input.topic,
+      topic: input.topic,
+      description: `A ${input.level} level course on ${input.topic} designed to help you ${input.goal}.`,
+      level: input.level,
+      goal: input.goal,
+      tone: input.tone,
+      targetAudience: input.targetAudience ?? null,
+      prerequisites: input.prerequisites ?? null,
+      sectionCount: input.sectionCount,
+      timeCommitment: input.timeCommitment,
+      startDate: input.startDate ?? null,
+      endDate: input.endDate ?? null,
+      status: "generating",
+    });
+
+    // Step 2: Save uploaded files (but don't extract text yet, that happens during generation)
+    if (files.length > 0) {
+      await saveUploadedFiles(course.id, files);
+    }
+
+    console.log(`Course ${course.id} created, ready for section generation`);
+    return { success: true, courseId: course.id };
+  } catch (error) {
+    console.error("Course creation failed:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
  * Generate a specific section of an existing course (for progressive loading)
  */
 export async function generateNextSection(

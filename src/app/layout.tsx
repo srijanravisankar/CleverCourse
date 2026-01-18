@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ChatPanel } from "@/components/chat/ChatPanel";
-import { ChatTrigger } from "@/components/chat/ChatTrigger";
-import { SelectionPopover } from "@/components/chat/SelectionPopover";
 import { AuthProvider } from "@/components/auth-provider";
 import { GamificationProvider } from "@/components/gamification";
 
@@ -36,9 +33,7 @@ export default function RootLayout({
         <AuthProvider>
           <GamificationProvider>
             {children}
-            <ChatPanel />
-            <ChatTrigger />
-            <SelectionPopover />
+            {/* AI Chat features disabled for MVP */}
           </GamificationProvider>
         </AuthProvider>
       </body>
