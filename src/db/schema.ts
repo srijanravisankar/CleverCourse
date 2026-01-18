@@ -8,6 +8,7 @@ export const users = sqliteTable("users", {
   id: text("id").primaryKey(), // UUID
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
+  passwordHash: text("password_hash").notNull(), // bcrypt hashed password
   avatar: text("avatar"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
