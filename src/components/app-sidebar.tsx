@@ -21,8 +21,6 @@ import {
   GraduationCap,
   User,
   LogOut,
-  Moon,
-  Sun,
   RefreshCw,
   Trash2,
   BarChart3,
@@ -440,19 +438,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuLabel className="text-xs font-normal text-muted-foreground py-1.5">
-                    Theme
-                  </DropdownMenuLabel>
-                  <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                    <Sun className="size-4" />
-                    <span>Light</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                    <Moon className="size-4" />
-                    <span>Dark</span>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
                     className="flex items-center gap-2 cursor-pointer text-red-400"
