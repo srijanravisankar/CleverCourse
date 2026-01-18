@@ -1015,18 +1015,27 @@ export const gamificationRepository = {
     return updated;
   },
 
-  async addXp(userId: string, amount: number): Promise<UserGamification | undefined> {
+  async addXp(
+    userId: string,
+    amount: number,
+  ): Promise<UserGamification | undefined> {
     const current = await this.getOrCreate(userId);
     return this.update(userId, {
       xpTotal: current.xpTotal + amount,
     });
   },
 
-  async setLevel(userId: string, level: number): Promise<UserGamification | undefined> {
+  async setLevel(
+    userId: string,
+    level: number,
+  ): Promise<UserGamification | undefined> {
     return this.update(userId, { currentLevel: level });
   },
 
-  async updateStreak(userId: string, streak: number): Promise<UserGamification | undefined> {
+  async updateStreak(
+    userId: string,
+    streak: number,
+  ): Promise<UserGamification | undefined> {
     const current = await this.getOrCreate(userId);
     return this.update(userId, {
       currentStreak: streak,
@@ -1038,21 +1047,27 @@ export const gamificationRepository = {
   async useFreeze(userId: string): Promise<UserGamification | undefined> {
     const current = await this.getOrCreate(userId);
     if (current.freezesAvailable <= 0) return undefined;
-    
+
     return this.update(userId, {
       freezesAvailable: current.freezesAvailable - 1,
       freezeUsedToday: true,
     });
   },
 
-  async addSparks(userId: string, amount: number): Promise<UserGamification | undefined> {
+  async addSparks(
+    userId: string,
+    amount: number,
+  ): Promise<UserGamification | undefined> {
     const current = await this.getOrCreate(userId);
     return this.update(userId, {
       sparks: current.sparks + amount,
     });
   },
 
-  async purchaseFreeze(userId: string, cost: number): Promise<{ success: boolean; error?: string }> {
+  async purchaseFreeze(
+    userId: string,
+    cost: number,
+  ): Promise<{ success: boolean; error?: string }> {
     const current = await this.getOrCreate(userId);
     if (current.sparks < cost) {
       return { success: false, error: "Not enough Sparks" };
@@ -1068,7 +1083,12 @@ export const gamificationRepository = {
 
   async incrementStat(
     userId: string,
-    stat: "totalQuizzesPassed" | "totalSectionsCompleted" | "totalCoursesCompleted" | "totalFlashcardsReviewed" | "perfectQuizzes",
+    stat:
+      | "totalQuizzesPassed"
+      | "totalSectionsCompleted"
+      | "totalCoursesCompleted"
+      | "totalFlashcardsReviewed"
+      | "perfectQuizzes",
   ): Promise<UserGamification | undefined> {
     const current = await this.getOrCreate(userId);
     return this.update(userId, {
@@ -1076,7 +1096,9 @@ export const gamificationRepository = {
     });
   },
 
-  async resetDailyFreeze(userId: string): Promise<UserGamification | undefined> {
+  async resetDailyFreeze(
+    userId: string,
+  ): Promise<UserGamification | undefined> {
     return this.update(userId, { freezeUsedToday: false });
   },
 };
@@ -1123,7 +1145,10 @@ export const achievementRepository = {
 
   async findByConditionType(conditionType: string): Promise<Achievement[]> {
     return db.query.achievements.findMany({
-      where: eq(achievements.conditionType, conditionType as Achievement["conditionType"]),
+      where: eq(
+        achievements.conditionType,
+        conditionType as Achievement["conditionType"],
+      ),
     });
   },
 };
@@ -1133,7 +1158,10 @@ export const achievementRepository = {
 // ============================================================================
 
 export const userAchievementRepository = {
-  async create(userId: string, achievementId: string): Promise<UserAchievement> {
+  async create(
+    userId: string,
+    achievementId: string,
+  ): Promise<UserAchievement> {
     const id = generateId();
     const [userAchievement] = await db
       .insert(userAchievements)
@@ -1156,7 +1184,9 @@ export const userAchievementRepository = {
     });
   },
 
-  async findByUserIdWithAchievements(userId: string): Promise<(UserAchievement & { achievement: Achievement })[]> {
+  async findByUserIdWithAchievements(
+    userId: string,
+  ): Promise<(UserAchievement & { achievement: Achievement })[]> {
     const results = await db.query.userAchievements.findMany({
       where: eq(userAchievements.userId, userId),
       with: {
@@ -1166,7 +1196,10 @@ export const userAchievementRepository = {
     return results as (UserAchievement & { achievement: Achievement })[];
   },
 
-  async hasAchievement(userId: string, achievementId: string): Promise<boolean> {
+  async hasAchievement(
+    userId: string,
+    achievementId: string,
+  ): Promise<boolean> {
     const result = await db.query.userAchievements.findFirst({
       where: and(
         eq(userAchievements.userId, userId),
@@ -1188,7 +1221,9 @@ export const userAchievementRepository = {
       );
   },
 
-  async getUnseenAchievements(userId: string): Promise<(UserAchievement & { achievement: Achievement })[]> {
+  async getUnseenAchievements(
+    userId: string,
+  ): Promise<(UserAchievement & { achievement: Achievement })[]> {
     const results = await db.query.userAchievements.findMany({
       where: and(
         eq(userAchievements.userId, userId),

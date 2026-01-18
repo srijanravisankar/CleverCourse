@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Snowflake, Sparkles, X, Check, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { purchaseStreakFreeze } from '@/app/actions/gamification';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Snowflake, Sparkles, X, Check, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { purchaseStreakFreeze } from "@/app/actions/gamification";
 
 interface StreakFreezeShopProps {
   isOpen: boolean;
@@ -37,7 +37,7 @@ export function StreakFreezeShop({
 
   const handlePurchase = async () => {
     if (!canPurchase) return;
-    
+
     setIsPurchasing(true);
     setPurchaseResult(null);
 
@@ -46,17 +46,17 @@ export function StreakFreezeShop({
       setPurchaseResult({
         success: result.success,
         message: result.success
-          ? `You now have ${result.newFreezeCount} streak freeze${result.newFreezeCount !== 1 ? 's' : ''}!`
-          : result.error || 'Purchase failed',
+          ? `You now have ${result.newFreezeCount} streak freeze${result.newFreezeCount !== 1 ? "s" : ""}!`
+          : result.error || "Purchase failed",
       });
-      
+
       if (result.success) {
         onPurchaseSuccess?.();
       }
     } catch {
       setPurchaseResult({
         success: false,
-        message: 'Something went wrong',
+        message: "Something went wrong",
       });
     } finally {
       setIsPurchasing(false);
@@ -78,7 +78,7 @@ export function StreakFreezeShop({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{
-              type: 'spring',
+              type: "spring",
               stiffness: 300,
               damping: 25,
             }}
@@ -100,7 +100,7 @@ export function StreakFreezeShop({
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ type: 'spring', delay: 0.1 }}
+                transition={{ type: "spring", delay: 0.1 }}
                 className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center"
               >
                 <Snowflake className="h-8 w-8 text-white" />
@@ -147,10 +147,10 @@ export function StreakFreezeShop({
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={cn(
-                    'mb-3 p-2 rounded-lg flex items-center gap-2 text-sm',
+                    "mb-3 p-2 rounded-lg flex items-center gap-2 text-sm",
                     purchaseResult.success
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-red-500/20 text-red-400'
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-red-500/20 text-red-400",
                   )}
                 >
                   {purchaseResult.success ? (
@@ -166,31 +166,36 @@ export function StreakFreezeShop({
                 onClick={handlePurchase}
                 disabled={!canPurchase || isPurchasing}
                 className={cn(
-                  'w-full',
+                  "w-full",
                   canPurchase &&
-                    'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600'
+                    "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600",
                 )}
               >
                 {isPurchasing ? (
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
                   >
                     <Snowflake className="h-4 w-4" />
                   </motion.div>
                 ) : hasMaxFreezes ? (
-                  'Max Freezes Owned'
+                  "Max Freezes Owned"
                 ) : !canAfford ? (
                   `Need ${FREEZE_COST - currentSparks} more Sparks`
                 ) : (
-                  'Purchase Freeze'
+                  "Purchase Freeze"
                 )}
               </Button>
             </div>
 
             {/* Info */}
             <p className="text-xs text-muted-foreground text-center">
-              Freezes are automatically used when you miss a day to protect your streak.
+              Freezes are automatically used when you miss a day to protect your
+              streak.
             </p>
           </motion.div>
         </motion.div>

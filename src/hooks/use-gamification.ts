@@ -1,14 +1,14 @@
-import { useCallback } from 'react';
-import { useGamificationStore } from '@/store/use-gamification-store';
-import { getGamificationStats } from '@/app/actions/gamification';
-import type { AwardXpResult } from '@/db/types';
+import { useCallback } from "react";
+import { useGamificationStore } from "@/store/use-gamification-store";
+import { getGamificationStats } from "@/app/actions/gamification";
+import type { AwardXpResult } from "@/db/types";
 
 /**
  * Hook to handle gamification results from server actions
- * 
+ *
  * Usage:
  * const { handleGamificationResult, refreshStats } = useGamification();
- * 
+ *
  * // After an action that returns gamification data
  * const result = await markSectionComplete(sectionId);
  * if (result.gamification) {
@@ -32,7 +32,7 @@ export function useGamification() {
     (result: AwardXpResult) => {
       processXpResult(result);
     },
-    [processXpResult]
+    [processXpResult],
   );
 
   /**
@@ -45,7 +45,7 @@ export function useGamification() {
         setStats(stats);
       }
     } catch (error) {
-      console.error('Failed to refresh gamification stats:', error);
+      console.error("Failed to refresh gamification stats:", error);
     }
   }, [setStats]);
 
@@ -56,7 +56,7 @@ export function useGamification() {
     (amount: number, reason: string, bonus: number = 0) => {
       triggerXpAnimation(amount, bonus, reason);
     },
-    [triggerXpAnimation]
+    [triggerXpAnimation],
   );
 
   /**
@@ -66,7 +66,7 @@ export function useGamification() {
     (previousLevel: number, newLevel: number) => {
       triggerLevelUp(previousLevel, newLevel);
     },
-    [triggerLevelUp]
+    [triggerLevelUp],
   );
 
   return {

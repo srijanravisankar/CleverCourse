@@ -222,9 +222,14 @@ export interface ProgressUpdate {
 // GAMIFICATION TYPES
 // ============================================================================
 
-export type AchievementCategory = "learning" | "streak" | "mastery" | "social" | "special";
+export type AchievementCategory =
+  | "learning"
+  | "streak"
+  | "mastery"
+  | "social"
+  | "special";
 export type AchievementRarity = "common" | "rare" | "epic" | "legendary";
-export type AchievementConditionType = 
+export type AchievementConditionType =
   | "sections_completed"
   | "courses_completed"
   | "streak_days"

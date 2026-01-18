@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Snowflake, ShoppingCart } from 'lucide-react';
-import { useGamificationStore } from '@/store/use-gamification-store';
-import { XPBar } from './XPBar';
-import { StreakBadge } from './StreakCounter';
-import { StreakFreezeShop } from './StreakFreezeShop';
-import { cn } from '@/lib/utils';
-import { getGamificationStats } from '@/app/actions/gamification';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, Snowflake, ShoppingCart } from "lucide-react";
+import { useGamificationStore } from "@/store/use-gamification-store";
+import { XPBar } from "./XPBar";
+import { StreakBadge } from "./StreakCounter";
+import { StreakFreezeShop } from "./StreakFreezeShop";
+import { cn } from "@/lib/utils";
+import { getGamificationStats } from "@/app/actions/gamification";
 
 interface SidebarGamificationProps {
   className?: string;
@@ -28,7 +28,7 @@ export function SidebarGamification({ className }: SidebarGamificationProps) {
 
   if (isLoading) {
     return (
-      <div className={cn('p-3 border-b', className)}>
+      <div className={cn("p-3 border-b", className)}>
         <div className="space-y-2 animate-pulse">
           <div className="h-4 bg-muted rounded w-1/3" />
           <div className="h-2 bg-muted rounded w-full" />
@@ -51,8 +51,8 @@ export function SidebarGamification({ className }: SidebarGamificationProps) {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          'p-3 border-b bg-gradient-to-r from-sidebar to-transparent',
-          className
+          "p-3 border-b bg-gradient-to-r from-sidebar to-transparent",
+          className,
         )}
       >
         {/* Level & XP Bar */}
@@ -72,11 +72,11 @@ export function SidebarGamification({ className }: SidebarGamificationProps) {
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowShop(true)}
             className={cn(
-              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg',
-              'bg-gradient-to-r from-yellow-500/10 to-amber-500/10',
-              'border border-yellow-500/20',
-              'hover:border-yellow-500/40 transition-colors',
-              'group'
+              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg",
+              "bg-gradient-to-r from-yellow-500/10 to-amber-500/10",
+              "border border-yellow-500/20",
+              "hover:border-yellow-500/40 transition-colors",
+              "group",
             )}
           >
             <Sparkles className="h-4 w-4 text-yellow-400" />
@@ -86,7 +86,7 @@ export function SidebarGamification({ className }: SidebarGamificationProps) {
             <AnimatePresence>
               <motion.div
                 initial={{ width: 0, opacity: 0 }}
-                whileHover={{ width: 'auto', opacity: 1 }}
+                whileHover={{ width: "auto", opacity: 1 }}
                 className="overflow-hidden"
               >
                 <ShoppingCart className="h-3.5 w-3.5 text-yellow-400/70 ml-0.5" />
@@ -100,7 +100,8 @@ export function SidebarGamification({ className }: SidebarGamificationProps) {
           <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
             <Snowflake className="h-3 w-3 text-cyan-400" />
             <span>
-              {stats.freezesAvailable} freeze{stats.freezesAvailable !== 1 ? 's' : ''} ready
+              {stats.freezesAvailable} freeze
+              {stats.freezesAvailable !== 1 ? "s" : ""} ready
             </span>
           </div>
         )}

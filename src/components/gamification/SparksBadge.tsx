@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface SparksBadgeProps {
   amount: number;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   showLabel?: boolean;
   className?: string;
 }
 
 export function SparksBadge({
   amount,
-  size = 'md',
+  size = "md",
   showLabel = false,
   className,
 }: SparksBadgeProps) {
   const sizeClasses = {
-    sm: 'text-sm px-2 py-0.5',
-    md: 'text-base px-3 py-1',
-    lg: 'text-lg px-4 py-1.5',
+    sm: "text-sm px-2 py-0.5",
+    md: "text-base px-3 py-1",
+    lg: "text-lg px-4 py-1.5",
   };
 
   const iconSizes = {
@@ -32,11 +32,11 @@ export function SparksBadge({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full',
-        'bg-gradient-to-r from-yellow-500/10 to-amber-500/10',
-        'border border-yellow-500/20',
+        "inline-flex items-center gap-1.5 rounded-full",
+        "bg-gradient-to-r from-yellow-500/10 to-amber-500/10",
+        "border border-yellow-500/20",
         sizeClasses[size],
-        className
+        className,
       )}
     >
       <motion.div
@@ -56,7 +56,7 @@ export function SparksBadge({
           fill="currentColor"
         />
       </motion.div>
-      
+
       <AnimatePresence mode="wait">
         <motion.span
           key={amount}

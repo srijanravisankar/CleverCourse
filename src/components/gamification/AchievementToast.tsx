@@ -1,11 +1,21 @@
-'use client';
+"use client";
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Star, Zap, Flame, Target, BookOpen, Award, Crown, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import confetti from 'canvas-confetti';
-import { useEffect } from 'react';
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Trophy,
+  Star,
+  Zap,
+  Flame,
+  Target,
+  BookOpen,
+  Award,
+  Crown,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import confetti from "canvas-confetti";
+import { useEffect } from "react";
 
 interface AchievementToastProps {
   isOpen: boolean;
@@ -31,7 +41,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const getIcon = (iconName: string) => {
-  const normalizedName = iconName.toLowerCase().replace(/[^a-z]/g, '');
+  const normalizedName = iconName.toLowerCase().replace(/[^a-z]/g, "");
   return iconMap[normalizedName] || Trophy;
 };
 
@@ -47,7 +57,7 @@ export function AchievementToast({
         particleCount: 50,
         spread: 60,
         origin: { y: 0.3, x: 0.9 },
-        colors: ['#FFD700', '#FFA500', '#FF6B6B'],
+        colors: ["#FFD700", "#FFA500", "#FF6B6B"],
       });
     }
   }, [isOpen, achievement]);
@@ -64,7 +74,7 @@ export function AchievementToast({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 400, opacity: 0 }}
           transition={{
-            type: 'spring',
+            type: "spring",
             stiffness: 400,
             damping: 25,
           }}
@@ -100,7 +110,7 @@ export function AchievementToast({
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{
-                  type: 'spring',
+                  type: "spring",
                   stiffness: 200,
                   damping: 15,
                   delay: 0.1,
@@ -120,7 +130,7 @@ export function AchievementToast({
                 >
                   Achievement Unlocked!
                 </motion.p>
-                
+
                 <motion.h3
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -129,7 +139,7 @@ export function AchievementToast({
                 >
                   {achievement.name}
                 </motion.h3>
-                
+
                 <motion.p
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -149,16 +159,16 @@ export function AchievementToast({
                   >
                     {achievement.xpReward && achievement.xpReward > 0 && (
                       <span className="inline-flex items-center gap-1 text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
-                        <Zap className="h-3 w-3" />
-                        +{achievement.xpReward} XP
+                        <Zap className="h-3 w-3" />+{achievement.xpReward} XP
                       </span>
                     )}
-                    {achievement.currencyReward && achievement.currencyReward > 0 && (
-                      <span className="inline-flex items-center gap-1 text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">
-                        <Star className="h-3 w-3" />
-                        +{achievement.currencyReward} Sparks
-                      </span>
-                    )}
+                    {achievement.currencyReward &&
+                      achievement.currencyReward > 0 && (
+                        <span className="inline-flex items-center gap-1 text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">
+                          <Star className="h-3 w-3" />+
+                          {achievement.currencyReward} Sparks
+                        </span>
+                      )}
                   </motion.div>
                 )}
               </div>
@@ -167,9 +177,9 @@ export function AchievementToast({
             {/* Progress bar animation */}
             <motion.div
               className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-yellow-400 to-orange-500"
-              initial={{ width: '100%' }}
-              animate={{ width: '0%' }}
-              transition={{ duration: 5, ease: 'linear' }}
+              initial={{ width: "100%" }}
+              animate={{ width: "0%" }}
+              transition={{ duration: 5, ease: "linear" }}
               onAnimationComplete={onClose}
             />
           </div>
@@ -201,7 +211,7 @@ export function XPGainToast({
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: -20, opacity: 0, scale: 0.8 }}
           transition={{
-            type: 'spring',
+            type: "spring",
             stiffness: 400,
             damping: 25,
           }}
@@ -222,7 +232,9 @@ export function XPGainToast({
             </motion.div>
             <div>
               <span className="font-bold text-blue-400">+{amount} XP</span>
-              <span className="text-muted-foreground text-sm ml-1">{reason}</span>
+              <span className="text-muted-foreground text-sm ml-1">
+                {reason}
+              </span>
             </div>
           </div>
         </motion.div>

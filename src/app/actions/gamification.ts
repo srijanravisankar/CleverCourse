@@ -2,7 +2,7 @@
 
 /**
  * Gamification Engine - Server Actions
- * 
+ *
  * This module provides the core gamification logic for CleverCourse:
  * - XP awarding with variable rewards (dopamine hit for ADHD users)
  * - Level progression with smooth curves
@@ -48,7 +48,8 @@ import {
  */
 function calculateBonusXp(baseXp: number): number {
   if (Math.random() < BONUS_CHANCE) {
-    const multiplier = BONUS_MULTIPLIER_MIN + 
+    const multiplier =
+      BONUS_MULTIPLIER_MIN +
       Math.random() * (BONUS_MULTIPLIER_MAX - BONUS_MULTIPLIER_MIN);
     return Math.floor(baseXp * multiplier) - baseXp;
   }
@@ -64,16 +65,22 @@ function calculateBonusXp(baseXp: number): number {
  */
 function isStreakValid(lastActivityDate: Date | null): boolean {
   if (!lastActivityDate) return false;
-  
+
   const now = new Date();
   const lastActivity = new Date(lastActivityDate);
-  
+
   // Get dates without time for comparison
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const lastDay = new Date(lastActivity.getFullYear(), lastActivity.getMonth(), lastActivity.getDate());
-  
-  const diffDays = Math.floor((today.getTime() - lastDay.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const lastDay = new Date(
+    lastActivity.getFullYear(),
+    lastActivity.getMonth(),
+    lastActivity.getDate(),
+  );
+
+  const diffDays = Math.floor(
+    (today.getTime() - lastDay.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
   // Streak is valid if activity was today or yesterday
   return diffDays <= 1;
 }
@@ -83,10 +90,10 @@ function isStreakValid(lastActivityDate: Date | null): boolean {
  */
 function wasActiveToday(lastActivityDate: Date | null): boolean {
   if (!lastActivityDate) return false;
-  
+
   const now = new Date();
   const lastActivity = new Date(lastActivityDate);
-  
+
   return (
     now.getFullYear() === lastActivity.getFullYear() &&
     now.getMonth() === lastActivity.getMonth() &&
@@ -100,7 +107,7 @@ function wasActiveToday(lastActivityDate: Date | null): boolean {
 
 /**
  * Award XP to a user with full gamification processing
- * 
+ *
  * This is the main function that handles:
  * - XP awarding with variable bonus chance
  * - Level up detection
@@ -142,7 +149,10 @@ export async function awardXp(
       // Continue streak
       currentStreak += 1;
       streakUpdated = true;
-    } else if (gamification.freezesAvailable > 0 && gamification.currentStreak > 0) {
+    } else if (
+      gamification.freezesAvailable > 0 &&
+      gamification.currentStreak > 0
+    ) {
       // Use freeze to save streak
       await gamificationRepository.useFreeze(userId);
       streakUpdated = true;
@@ -177,8 +187,11 @@ export async function awardXp(
   if (leveledUp) {
     const levelUpBonus = XP_REWARDS.level_up_bonus * (newLevel - previousLevel);
     await gamificationRepository.addXp(userId, levelUpBonus);
-    await gamificationRepository.addSparks(userId, SPARKS_REWARDS.level_up * (newLevel - previousLevel));
-    
+    await gamificationRepository.addSparks(
+      userId,
+      SPARKS_REWARDS.level_up * (newLevel - previousLevel),
+    );
+
     await xpTransactionRepository.create({
       userId,
       amount: levelUpBonus,
@@ -195,9 +208,15 @@ export async function awardXp(
 
   // Check for streak milestones
   if (currentStreak === 7) {
-    await gamificationRepository.addSparks(userId, SPARKS_REWARDS.streak_milestone_7);
+    await gamificationRepository.addSparks(
+      userId,
+      SPARKS_REWARDS.streak_milestone_7,
+    );
   } else if (currentStreak === 30) {
-    await gamificationRepository.addSparks(userId, SPARKS_REWARDS.streak_milestone_30);
+    await gamificationRepository.addSparks(
+      userId,
+      SPARKS_REWARDS.streak_milestone_30,
+    );
   }
 
   // Check and unlock achievements
@@ -255,7 +274,7 @@ export async function maintainStreak(): Promise<{
   }
 
   const gamification = await gamificationRepository.getOrCreate(userId);
-  
+
   // Already active today
   if (wasActiveToday(gamification.lastActivityDate)) {
     return {
@@ -269,7 +288,10 @@ export async function maintainStreak(): Promise<{
   // Check if streak is still valid
   if (isStreakValid(gamification.lastActivityDate)) {
     // Continue streak
-    await gamificationRepository.updateStreak(userId, gamification.currentStreak + 1);
+    await gamificationRepository.updateStreak(
+      userId,
+      gamification.currentStreak + 1,
+    );
     return {
       success: true,
       currentStreak: gamification.currentStreak + 1,
@@ -281,7 +303,9 @@ export async function maintainStreak(): Promise<{
   // Streak would be broken - check for freeze
   if (gamification.freezesAvailable > 0 && gamification.currentStreak > 0) {
     await gamificationRepository.useFreeze(userId);
-    await gamificationRepository.update(userId, { lastActivityDate: new Date() });
+    await gamificationRepository.update(userId, {
+      lastActivityDate: new Date(),
+    });
     return {
       success: true,
       currentStreak: gamification.currentStreak,
@@ -318,8 +342,11 @@ export async function purchaseStreakFreeze(): Promise<{
     throw new Error("Not authenticated");
   }
 
-  const result = await gamificationRepository.purchaseFreeze(userId, FREEZE_COST);
-  
+  const result = await gamificationRepository.purchaseFreeze(
+    userId,
+    FREEZE_COST,
+  );
+
   if (!result.success) {
     return { success: false, error: result.error };
   }
@@ -339,11 +366,15 @@ export async function purchaseStreakFreeze(): Promise<{
 /**
  * Check all achievements and unlock any that are newly earned
  */
-async function checkAndUnlockAchievements(userId: string): Promise<Achievement[]> {
+async function checkAndUnlockAchievements(
+  userId: string,
+): Promise<Achievement[]> {
   const gamification = await gamificationRepository.getOrCreate(userId);
   const allAchievements = await achievementRepository.findAll();
   const unlockedIds = new Set(
-    (await userAchievementRepository.findByUserId(userId)).map((ua) => ua.achievementId)
+    (await userAchievementRepository.findByUserId(userId)).map(
+      (ua) => ua.achievementId,
+    ),
   );
 
   const newlyUnlocked: Achievement[] = [];
@@ -352,25 +383,30 @@ async function checkAndUnlockAchievements(userId: string): Promise<Achievement[]
     if (unlockedIds.has(achievement.id)) continue;
 
     let shouldUnlock = false;
-    
+
     switch (achievement.conditionType) {
       case "sections_completed":
-        shouldUnlock = gamification.totalSectionsCompleted >= achievement.conditionValue;
+        shouldUnlock =
+          gamification.totalSectionsCompleted >= achievement.conditionValue;
         break;
       case "courses_completed":
-        shouldUnlock = gamification.totalCoursesCompleted >= achievement.conditionValue;
+        shouldUnlock =
+          gamification.totalCoursesCompleted >= achievement.conditionValue;
         break;
       case "streak_days":
         shouldUnlock = gamification.currentStreak >= achievement.conditionValue;
         break;
       case "quizzes_passed":
-        shouldUnlock = gamification.totalQuizzesPassed >= achievement.conditionValue;
+        shouldUnlock =
+          gamification.totalQuizzesPassed >= achievement.conditionValue;
         break;
       case "perfect_quizzes":
-        shouldUnlock = gamification.perfectQuizzes >= achievement.conditionValue;
+        shouldUnlock =
+          gamification.perfectQuizzes >= achievement.conditionValue;
         break;
       case "flashcards_reviewed":
-        shouldUnlock = gamification.totalFlashcardsReviewed >= achievement.conditionValue;
+        shouldUnlock =
+          gamification.totalFlashcardsReviewed >= achievement.conditionValue;
         break;
       case "xp_earned":
         shouldUnlock = gamification.xpTotal >= achievement.conditionValue;
@@ -382,15 +418,18 @@ async function checkAndUnlockAchievements(userId: string): Promise<Achievement[]
 
     if (shouldUnlock) {
       await userAchievementRepository.create(userId, achievement.id);
-      
+
       // Award achievement rewards
       if (achievement.xpReward > 0) {
         await gamificationRepository.addXp(userId, achievement.xpReward);
       }
       if (achievement.sparksReward > 0) {
-        await gamificationRepository.addSparks(userId, achievement.sparksReward);
+        await gamificationRepository.addSparks(
+          userId,
+          achievement.sparksReward,
+        );
       }
-      
+
       newlyUnlocked.push(achievement);
     }
   }
@@ -405,7 +444,9 @@ async function checkAndUnlockAchievements(userId: string): Promise<Achievement[]
 /**
  * Increment section completed count and award XP
  */
-export async function onSectionCompleted(sectionId: string): Promise<AwardXpResult> {
+export async function onSectionCompleted(
+  sectionId: string,
+): Promise<AwardXpResult> {
   const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error("Not authenticated");
@@ -428,19 +469,21 @@ export async function onQuizCompleted(
   }
 
   await gamificationRepository.incrementStat(userId, "totalQuizzesPassed");
-  
+
   if (isPerfect) {
     await gamificationRepository.incrementStat(userId, "perfectQuizzes");
     return awardXp("perfect_quiz", quizId, "quiz");
   }
-  
+
   return awardXp("quiz_completed", quizId, "quiz");
 }
 
 /**
  * Increment course completed count and award XP
  */
-export async function onCourseCompleted(courseId: string): Promise<AwardXpResult> {
+export async function onCourseCompleted(
+  courseId: string,
+): Promise<AwardXpResult> {
   const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error("Not authenticated");
@@ -453,7 +496,9 @@ export async function onCourseCompleted(courseId: string): Promise<AwardXpResult
 /**
  * Increment flashcard reviewed count and award XP
  */
-export async function onFlashcardReviewed(flashcardId: string): Promise<AwardXpResult> {
+export async function onFlashcardReviewed(
+  flashcardId: string,
+): Promise<AwardXpResult> {
   const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error("Not authenticated");
@@ -499,7 +544,9 @@ export async function getGamificationStats(): Promise<GamificationStats | null> 
 /**
  * Get all achievements with unlock status for the current user
  */
-export async function getAchievementsWithStatus(): Promise<AchievementWithStatus[]> {
+export async function getAchievementsWithStatus(): Promise<
+  AchievementWithStatus[]
+> {
   const userId = await getCurrentUserId();
   if (!userId) {
     return [];
@@ -507,9 +554,10 @@ export async function getAchievementsWithStatus(): Promise<AchievementWithStatus
 
   const gamification = await gamificationRepository.getOrCreate(userId);
   const allAchievements = await achievementRepository.findAll();
-  const userAchievementsList = await userAchievementRepository.findByUserId(userId);
+  const userAchievementsList =
+    await userAchievementRepository.findByUserId(userId);
   const unlockedMap = new Map(
-    userAchievementsList.map((ua) => [ua.achievementId, ua.unlockedAt])
+    userAchievementsList.map((ua) => [ua.achievementId, ua.unlockedAt]),
   );
 
   return allAchievements.map((achievement) => {
@@ -547,7 +595,10 @@ export async function getAchievementsWithStatus(): Promise<AchievementWithStatus
 
     const progress = isUnlocked
       ? 100
-      : Math.min(100, Math.floor((currentValue / achievement.conditionValue) * 100));
+      : Math.min(
+          100,
+          Math.floor((currentValue / achievement.conditionValue) * 100),
+        );
 
     return {
       ...achievement,
@@ -575,7 +626,9 @@ export async function getUnseenAchievements(): Promise<Achievement[]> {
 /**
  * Mark an achievement as seen
  */
-export async function markAchievementSeen(achievementId: string): Promise<void> {
+export async function markAchievementSeen(
+  achievementId: string,
+): Promise<void> {
   const userId = await getCurrentUserId();
   if (!userId) {
     return;
@@ -587,18 +640,23 @@ export async function markAchievementSeen(achievementId: string): Promise<void> 
 /**
  * Get recent XP transactions
  */
-export async function getXpHistory(limit = 20): Promise<{
-  amount: number;
-  bonusAmount: number;
-  reason: string;
-  createdAt: Date;
-}[]> {
+export async function getXpHistory(limit = 20): Promise<
+  {
+    amount: number;
+    bonusAmount: number;
+    reason: string;
+    createdAt: Date;
+  }[]
+> {
   const userId = await getCurrentUserId();
   if (!userId) {
     return [];
   }
 
-  const transactions = await xpTransactionRepository.findByUserId(userId, limit);
+  const transactions = await xpTransactionRepository.findByUserId(
+    userId,
+    limit,
+  );
   return transactions.map((t) => ({
     amount: t.amount,
     bonusAmount: t.bonusAmount,

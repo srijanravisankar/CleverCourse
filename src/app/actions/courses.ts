@@ -30,7 +30,12 @@ import type {
   AwardXpResult,
 } from "@/db/types";
 import { getCurrentUserId } from "./auth";
-import { onSectionCompleted, onFlashcardReviewed, onCourseCompleted, onQuizCompleted } from "./gamification";
+import {
+  onSectionCompleted,
+  onFlashcardReviewed,
+  onCourseCompleted,
+  onQuizCompleted,
+} from "./gamification";
 
 // ============================================================================
 // COURSE ACTIONS
@@ -234,16 +239,16 @@ export async function markSectionComplete(
   if (section) {
     // Increment the completed sections count on the course
     await courseRepository.incrementCompletedSections(section.courseId);
-    
+
     // Award XP for section completion
     const gamificationResult = await onSectionCompleted(sectionId);
-    
+
     // Check if course is now complete
     const course = await courseRepository.findById(section.courseId);
     if (course && course.completedSections >= course.sectionCount) {
       // Award bonus XP for course completion
       const courseResult = await onCourseCompleted(section.courseId);
-      
+
       // Combine results
       if (gamificationResult && courseResult) {
         return {
@@ -260,7 +265,7 @@ export async function markSectionComplete(
         };
       }
     }
-    
+
     return { section, gamification: gamificationResult };
   }
 
@@ -368,10 +373,10 @@ export async function getSectionFlashcards(sectionId: string) {
  */
 export async function reviewFlashcard(flashcardId: string, isCorrect: boolean) {
   const result = await flashcardRepository.updateReview(flashcardId, isCorrect);
-  
+
   // Award XP for flashcard review (regardless of correctness)
   const gamificationResult = await onFlashcardReviewed(flashcardId);
-  
+
   return { ...result, gamification: gamificationResult };
 }
 
@@ -452,13 +457,20 @@ export async function submitQuizResults(
   sectionId: string,
   correctAnswers: number,
   totalQuestions: number,
-): Promise<{ score: number; isPerfect: boolean; gamification?: AwardXpResult }> {
-  const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+): Promise<{
+  score: number;
+  isPerfect: boolean;
+  gamification?: AwardXpResult;
+}> {
+  const score =
+    totalQuestions > 0
+      ? Math.round((correctAnswers / totalQuestions) * 100)
+      : 0;
   const isPerfect = score === 100;
-  
+
   // Award XP for completing the quiz
   const gamificationResult = await onQuizCompleted(sectionId, isPerfect);
-  
+
   return {
     score,
     isPerfect,

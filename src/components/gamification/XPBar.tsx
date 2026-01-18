@@ -12,8 +12,13 @@ interface XPBarProps {
   compact?: boolean;
 }
 
-export function XPBar({ className, showLevel = true, compact = false }: XPBarProps) {
-  const { stats, pendingXpAnimation, clearXpAnimation } = useGamificationStore();
+export function XPBar({
+  className,
+  showLevel = true,
+  compact = false,
+}: XPBarProps) {
+  const { stats, pendingXpAnimation, clearXpAnimation } =
+    useGamificationStore();
   const [isAnimating, setIsAnimating] = React.useState(false);
   const [displayProgress, setDisplayProgress] = React.useState(0);
 
@@ -61,7 +66,7 @@ export function XPBar({ className, showLevel = true, compact = false }: XPBarPro
               className={cn(
                 "flex items-center justify-center rounded-md font-bold text-xs",
                 compact ? "w-6 h-6" : "w-8 h-8",
-                "bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm"
+                "bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm",
               )}
               animate={isAnimating ? { scale: [1, 1.2, 1] } : {}}
               transition={{ duration: 0.3 }}
@@ -82,17 +87,19 @@ export function XPBar({ className, showLevel = true, compact = false }: XPBarPro
       )}
 
       {/* Progress bar */}
-      <div className={cn(
-        "relative w-full bg-muted rounded-full overflow-hidden",
-        compact ? "h-1.5" : "h-2.5"
-      )}>
+      <div
+        className={cn(
+          "relative w-full bg-muted rounded-full overflow-hidden",
+          compact ? "h-1.5" : "h-2.5",
+        )}
+      >
         <motion.div
           className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${displayProgress}%` }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         />
-        
+
         {/* Shimmer effect when animating */}
         <AnimatePresence>
           {isAnimating && (

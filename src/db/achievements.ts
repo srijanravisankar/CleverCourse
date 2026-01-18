@@ -1,6 +1,6 @@
 /**
  * Default Achievements for CleverCourse
- * 
+ *
  * This file contains all the predefined achievements that will be
  * seeded into the database when the app starts.
  */

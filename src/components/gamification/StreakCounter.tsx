@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { Flame, Snowflake } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from "framer-motion";
+import { Flame, Snowflake } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface StreakCounterProps {
   streak: number;
   freezesAvailable: number;
   isProtected?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   showFreezes?: boolean;
   className?: string;
 }
@@ -17,14 +17,14 @@ export function StreakCounter({
   streak,
   freezesAvailable,
   isProtected = false,
-  size = 'md',
+  size = "md",
   showFreezes = true,
   className,
 }: StreakCounterProps) {
   const sizeClasses = {
-    sm: 'text-sm gap-1',
-    md: 'text-base gap-1.5',
-    lg: 'text-lg gap-2',
+    sm: "text-sm gap-1",
+    md: "text-base gap-1.5",
+    lg: "text-lg gap-2",
   };
 
   const iconSizes = {
@@ -34,10 +34,10 @@ export function StreakCounter({
   };
 
   const flameColors = {
-    cold: 'text-slate-400',
-    warm: 'text-orange-400',
-    hot: 'text-orange-500',
-    blazing: 'text-red-500',
+    cold: "text-slate-400",
+    warm: "text-orange-400",
+    hot: "text-orange-500",
+    blazing: "text-red-500",
   };
 
   const getFlameColor = () => {
@@ -48,17 +48,21 @@ export function StreakCounter({
   };
 
   return (
-    <div className={cn('flex items-center', sizeClasses[size], className)}>
+    <div className={cn("flex items-center", sizeClasses[size], className)}>
       {/* Streak flame */}
       <motion.div
         className="relative flex items-center"
-        animate={streak > 0 ? { 
-          scale: [1, 1.1, 1],
-        } : {}}
+        animate={
+          streak > 0
+            ? {
+                scale: [1, 1.1, 1],
+              }
+            : {}
+        }
         transition={{
           duration: 1.5,
           repeat: Infinity,
-          ease: 'easeInOut',
+          ease: "easeInOut",
         }}
       >
         {/* Glow effect for active streaks */}
@@ -71,7 +75,7 @@ export function StreakCounter({
             transition={{
               duration: 1.5,
               repeat: Infinity,
-              ease: 'easeInOut',
+              ease: "easeInOut",
             }}
           >
             <Flame
@@ -81,11 +85,11 @@ export function StreakCounter({
             />
           </motion.div>
         )}
-        
+
         <Flame
           size={iconSizes[size]}
-          className={cn(getFlameColor(), 'relative z-10')}
-          fill={streak > 0 ? 'currentColor' : 'none'}
+          className={cn(getFlameColor(), "relative z-10")}
+          fill={streak > 0 ? "currentColor" : "none"}
         />
       </motion.div>
 
@@ -98,8 +102,8 @@ export function StreakCounter({
           exit={{ y: 10, opacity: 0 }}
           transition={{ duration: 0.2 }}
           className={cn(
-            'font-bold tabular-nums',
-            streak === 0 ? 'text-slate-400' : 'text-foreground'
+            "font-bold tabular-nums",
+            streak === 0 ? "text-slate-400" : "text-foreground",
           )}
         >
           {streak}
@@ -115,10 +119,7 @@ export function StreakCounter({
         >
           <Snowflake
             size={iconSizes[size] - 4}
-            className={cn(
-              'text-cyan-400',
-              isProtected && 'animate-pulse'
-            )}
+            className={cn("text-cyan-400", isProtected && "animate-pulse")}
           />
           <span className="text-xs text-cyan-400 font-medium">
             {freezesAvailable}
@@ -153,11 +154,11 @@ export function StreakBadge({
   return (
     <div
       className={cn(
-        'flex items-center gap-2 px-3 py-1.5 rounded-lg',
+        "flex items-center gap-2 px-3 py-1.5 rounded-lg",
         streak > 0
-          ? 'bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20'
-          : 'bg-muted/50 border border-border',
-        className
+          ? "bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20"
+          : "bg-muted/50 border border-border",
+        className,
       )}
     >
       <StreakCounter
@@ -168,7 +169,7 @@ export function StreakBadge({
       />
       {streak > 0 && (
         <span className="text-xs text-muted-foreground">
-          day{streak !== 1 ? 's' : ''}
+          day{streak !== 1 ? "s" : ""}
         </span>
       )}
     </div>

@@ -2,7 +2,7 @@
 
 /**
  * Seed Gamification Data
- * 
+ *
  * Seeds the default achievements into the database.
  * This should be called once when the app starts or when achievements are missing.
  */

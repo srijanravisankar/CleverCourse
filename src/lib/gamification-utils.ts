@@ -1,6 +1,6 @@
 /**
  * Gamification Utilities & Constants
- * 
+ *
  * This module contains constants and utility functions for the gamification system.
  * These are separated from server actions so they can be imported by client components.
  */
@@ -107,13 +107,19 @@ export function getXpProgress(xp: number, currentLevel: number): number {
 /**
  * Calculate variable reward bonus (for dopamine hit)
  */
-export function calculateVariableReward(baseXp: number): { xp: number; bonusXp: number; gotBonus: boolean } {
+export function calculateVariableReward(baseXp: number): {
+  xp: number;
+  bonusXp: number;
+  gotBonus: boolean;
+} {
   const gotBonus = Math.random() < BONUS_CHANCE;
   if (!gotBonus) {
     return { xp: baseXp, bonusXp: 0, gotBonus: false };
   }
-  
-  const multiplier = BONUS_MULTIPLIER_MIN + Math.random() * (BONUS_MULTIPLIER_MAX - BONUS_MULTIPLIER_MIN);
+
+  const multiplier =
+    BONUS_MULTIPLIER_MIN +
+    Math.random() * (BONUS_MULTIPLIER_MAX - BONUS_MULTIPLIER_MIN);
   const bonusXp = Math.floor(baseXp * (multiplier - 1));
   return { xp: baseXp + bonusXp, bonusXp, gotBonus: true };
 }

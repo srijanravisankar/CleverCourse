@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import confetti from 'canvas-confetti';
-import { Star, Sparkles, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
+import { Star, Sparkles, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface LevelUpModalProps {
   isOpen: boolean;
@@ -25,12 +25,19 @@ export function LevelUpModal({
   useEffect(() => {
     if (isOpen && !hasConfettiRef.current) {
       hasConfettiRef.current = true;
-      
+
       // Multi-burst confetti celebration
       const duration = 3000;
       const end = Date.now() + duration;
 
-      const colors = ['#FFD700', '#FFA500', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
+      const colors = [
+        "#FFD700",
+        "#FFA500",
+        "#FF6B6B",
+        "#4ECDC4",
+        "#45B7D1",
+        "#96CEB4",
+      ];
 
       const frame = () => {
         confetti({
@@ -85,7 +92,7 @@ export function LevelUpModal({
             animate={{ scale: 1, opacity: 1, rotateX: 0 }}
             exit={{ scale: 0.5, opacity: 0, rotateX: 15 }}
             transition={{
-              type: 'spring',
+              type: "spring",
               stiffness: 300,
               damping: 20,
             }}
@@ -94,7 +101,7 @@ export function LevelUpModal({
           >
             {/* Background glow */}
             <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-orange-500/10 to-red-500/10" />
-            
+
             {/* Animated particles background */}
             <div className="absolute inset-0 overflow-hidden">
               {[...Array(20)].map((_, i) => (
@@ -114,7 +121,7 @@ export function LevelUpModal({
                     duration: 2 + Math.random() * 2,
                     repeat: Infinity,
                     delay: Math.random() * 2,
-                    ease: 'linear',
+                    ease: "linear",
                   }}
                 />
               ))}
@@ -137,7 +144,7 @@ export function LevelUpModal({
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{
-                  type: 'spring',
+                  type: "spring",
                   stiffness: 200,
                   damping: 15,
                   delay: 0.2,
@@ -151,14 +158,17 @@ export function LevelUpModal({
                   transition={{
                     duration: 8,
                     repeat: Infinity,
-                    ease: 'linear',
+                    ease: "linear",
                   }}
                 />
-                
+
                 {/* Inner circle */}
                 <div className="absolute inset-1 rounded-full bg-card flex items-center justify-center">
                   <div className="text-center">
-                    <Star className="h-6 w-6 text-yellow-400 mx-auto mb-0.5" fill="currentColor" />
+                    <Star
+                      className="h-6 w-6 text-yellow-400 mx-auto mb-0.5"
+                      fill="currentColor"
+                    />
                     <span className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
                       {level}
                     </span>
@@ -183,8 +193,10 @@ export function LevelUpModal({
                 transition={{ delay: 0.4 }}
                 className="text-muted-foreground mb-6"
               >
-                You've reached{' '}
-                <span className="text-yellow-400 font-semibold">Level {level}</span>
+                You've reached{" "}
+                <span className="text-yellow-400 font-semibold">
+                  Level {level}
+                </span>
               </motion.p>
 
               {/* Stats */}
@@ -197,8 +209,10 @@ export function LevelUpModal({
                 <div className="flex items-center justify-center gap-2 text-sm">
                   <Sparkles className="h-4 w-4 text-yellow-400" />
                   <span className="text-muted-foreground">
-                    Next level in{' '}
-                    <span className="text-foreground font-medium">{xpToNext} XP</span>
+                    Next level in{" "}
+                    <span className="text-foreground font-medium">
+                      {xpToNext} XP
+                    </span>
                   </span>
                 </div>
               </motion.div>
