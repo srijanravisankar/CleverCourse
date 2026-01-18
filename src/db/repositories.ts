@@ -14,6 +14,10 @@ import {
   chatMessages,
   uploadedFiles,
   userProgress,
+  userGamification,
+  achievements,
+  userAchievements,
+  xpTransactions,
 } from "./schema";
 import type {
   User,
@@ -42,6 +46,14 @@ import type {
   NewUploadedFile,
   UserProgress,
   NewUserProgress,
+  UserGamification,
+  NewUserGamification,
+  Achievement,
+  NewAchievement,
+  UserAchievement,
+  NewUserAchievement,
+  XpTransaction,
+  NewXpTransaction,
   CourseWithSections,
   CourseSectionWithContent,
   FullCourse,
@@ -940,5 +952,320 @@ export const progressRepository = {
 
   async delete(id: string): Promise<void> {
     await db.delete(userProgress).where(eq(userProgress.id, id));
+  },
+};
+
+// ============================================================================
+// GAMIFICATION REPOSITORY
+// ============================================================================
+
+export const gamificationRepository = {
+  /**
+   * Get or create gamification record for a user
+   */
+  async getOrCreate(userId: string): Promise<UserGamification> {
+    const existing = await db.query.userGamification.findFirst({
+      where: eq(userGamification.userId, userId),
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    // Create new gamification record with defaults
+    const id = generateId();
+    const [record] = await db
+      .insert(userGamification)
+      .values({
+        id,
+        userId,
+        xpTotal: 0,
+        currentLevel: 1,
+        currentStreak: 0,
+        longestStreak: 0,
+        sparks: 0,
+        freezesAvailable: 1, // Start with 1 free freeze
+        freezeUsedToday: false,
+        totalQuizzesPassed: 0,
+        totalSectionsCompleted: 0,
+        totalCoursesCompleted: 0,
+        totalFlashcardsReviewed: 0,
+        perfectQuizzes: 0,
+      })
+      .returning();
+
+    return record;
+  },
+
+  async findByUserId(userId: string): Promise<UserGamification | undefined> {
+    return db.query.userGamification.findFirst({
+      where: eq(userGamification.userId, userId),
+    });
+  },
+
+  async update(
+    userId: string,
+    data: Partial<Omit<NewUserGamification, "id" | "userId">>,
+  ): Promise<UserGamification | undefined> {
+    const [updated] = await db
+      .update(userGamification)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(userGamification.userId, userId))
+      .returning();
+    return updated;
+  },
+
+  async addXp(
+    userId: string,
+    amount: number,
+  ): Promise<UserGamification | undefined> {
+    const current = await this.getOrCreate(userId);
+    return this.update(userId, {
+      xpTotal: current.xpTotal + amount,
+    });
+  },
+
+  async setLevel(
+    userId: string,
+    level: number,
+  ): Promise<UserGamification | undefined> {
+    return this.update(userId, { currentLevel: level });
+  },
+
+  async updateStreak(
+    userId: string,
+    streak: number,
+  ): Promise<UserGamification | undefined> {
+    const current = await this.getOrCreate(userId);
+    return this.update(userId, {
+      currentStreak: streak,
+      longestStreak: Math.max(current.longestStreak, streak),
+      lastActivityDate: new Date(),
+    });
+  },
+
+  async useFreeze(userId: string): Promise<UserGamification | undefined> {
+    const current = await this.getOrCreate(userId);
+    if (current.freezesAvailable <= 0) return undefined;
+
+    return this.update(userId, {
+      freezesAvailable: current.freezesAvailable - 1,
+      freezeUsedToday: true,
+    });
+  },
+
+  async addSparks(
+    userId: string,
+    amount: number,
+  ): Promise<UserGamification | undefined> {
+    const current = await this.getOrCreate(userId);
+    return this.update(userId, {
+      sparks: current.sparks + amount,
+    });
+  },
+
+  async purchaseFreeze(
+    userId: string,
+    cost: number,
+  ): Promise<{ success: boolean; error?: string }> {
+    const current = await this.getOrCreate(userId);
+    if (current.sparks < cost) {
+      return { success: false, error: "Not enough Sparks" };
+    }
+
+    await this.update(userId, {
+      sparks: current.sparks - cost,
+      freezesAvailable: current.freezesAvailable + 1,
+    });
+
+    return { success: true };
+  },
+
+  async incrementStat(
+    userId: string,
+    stat:
+      | "totalQuizzesPassed"
+      | "totalSectionsCompleted"
+      | "totalCoursesCompleted"
+      | "totalFlashcardsReviewed"
+      | "perfectQuizzes",
+  ): Promise<UserGamification | undefined> {
+    const current = await this.getOrCreate(userId);
+    return this.update(userId, {
+      [stat]: current[stat] + 1,
+    });
+  },
+
+  async resetDailyFreeze(
+    userId: string,
+  ): Promise<UserGamification | undefined> {
+    return this.update(userId, { freezeUsedToday: false });
+  },
+};
+
+// ============================================================================
+// ACHIEVEMENTS REPOSITORY
+// ============================================================================
+
+export const achievementRepository = {
+  async create(data: Omit<NewAchievement, "id">): Promise<Achievement> {
+    const id = generateId();
+    const [achievement] = await db
+      .insert(achievements)
+      .values({ ...data, id })
+      .returning();
+    return achievement;
+  },
+
+  async createWithId(data: NewAchievement): Promise<Achievement> {
+    const [achievement] = await db
+      .insert(achievements)
+      .values(data)
+      .returning();
+    return achievement;
+  },
+
+  async findById(id: string): Promise<Achievement | undefined> {
+    return db.query.achievements.findFirst({
+      where: eq(achievements.id, id),
+    });
+  },
+
+  async findAll(): Promise<Achievement[]> {
+    return db.query.achievements.findMany({
+      orderBy: [asc(achievements.category), asc(achievements.conditionValue)],
+    });
+  },
+
+  async findByCategory(category: string): Promise<Achievement[]> {
+    return db.query.achievements.findMany({
+      where: eq(achievements.category, category as Achievement["category"]),
+    });
+  },
+
+  async findByConditionType(conditionType: string): Promise<Achievement[]> {
+    return db.query.achievements.findMany({
+      where: eq(
+        achievements.conditionType,
+        conditionType as Achievement["conditionType"],
+      ),
+    });
+  },
+};
+
+// ============================================================================
+// USER ACHIEVEMENTS REPOSITORY
+// ============================================================================
+
+export const userAchievementRepository = {
+  async create(
+    userId: string,
+    achievementId: string,
+  ): Promise<UserAchievement> {
+    const id = generateId();
+    const [userAchievement] = await db
+      .insert(userAchievements)
+      .values({
+        id,
+        userId,
+        achievementId,
+        isSeen: false,
+      })
+      .returning();
+    return userAchievement;
+  },
+
+  async findByUserId(userId: string): Promise<UserAchievement[]> {
+    return db.query.userAchievements.findMany({
+      where: eq(userAchievements.userId, userId),
+      with: {
+        achievement: true,
+      },
+    });
+  },
+
+  async findByUserIdWithAchievements(
+    userId: string,
+  ): Promise<(UserAchievement & { achievement: Achievement })[]> {
+    const results = await db.query.userAchievements.findMany({
+      where: eq(userAchievements.userId, userId),
+      with: {
+        achievement: true,
+      },
+    });
+    return results as (UserAchievement & { achievement: Achievement })[];
+  },
+
+  async hasAchievement(
+    userId: string,
+    achievementId: string,
+  ): Promise<boolean> {
+    const result = await db.query.userAchievements.findFirst({
+      where: and(
+        eq(userAchievements.userId, userId),
+        eq(userAchievements.achievementId, achievementId),
+      ),
+    });
+    return !!result;
+  },
+
+  async markAsSeen(userId: string, achievementId: string): Promise<void> {
+    await db
+      .update(userAchievements)
+      .set({ isSeen: true })
+      .where(
+        and(
+          eq(userAchievements.userId, userId),
+          eq(userAchievements.achievementId, achievementId),
+        ),
+      );
+  },
+
+  async getUnseenAchievements(
+    userId: string,
+  ): Promise<(UserAchievement & { achievement: Achievement })[]> {
+    const results = await db.query.userAchievements.findMany({
+      where: and(
+        eq(userAchievements.userId, userId),
+        eq(userAchievements.isSeen, false),
+      ),
+      with: {
+        achievement: true,
+      },
+    });
+    return results as (UserAchievement & { achievement: Achievement })[];
+  },
+};
+
+// ============================================================================
+// XP TRANSACTIONS REPOSITORY
+// ============================================================================
+
+export const xpTransactionRepository = {
+  async create(data: Omit<NewXpTransaction, "id">): Promise<XpTransaction> {
+    const id = generateId();
+    const [transaction] = await db
+      .insert(xpTransactions)
+      .values({ ...data, id })
+      .returning();
+    return transaction;
+  },
+
+  async findByUserId(userId: string, limit = 50): Promise<XpTransaction[]> {
+    return db.query.xpTransactions.findMany({
+      where: eq(xpTransactions.userId, userId),
+      orderBy: [desc(xpTransactions.createdAt)],
+      limit,
+    });
+  },
+
+  async getTotalXpByReason(userId: string, reason: string): Promise<number> {
+    const transactions = await db.query.xpTransactions.findMany({
+      where: and(
+        eq(xpTransactions.userId, userId),
+        eq(xpTransactions.reason, reason as XpTransaction["reason"]),
+      ),
+    });
+    return transactions.reduce((sum, t) => sum + t.amount + t.bonusAmount, 0);
   },
 };

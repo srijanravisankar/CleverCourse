@@ -29,6 +29,7 @@ async function seed() {
   const user = await userRepository.create({
     email: "test@clevercourse.ai",
     name: "Test User",
+    passwordHash: "$2a$10$dummyhashfortestingonly123456789", // bcrypt dummy hash
     avatar: null,
   });
   console.log(`✓ Created user: ${user.name} (${user.id})\n`);

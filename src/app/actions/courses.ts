@@ -27,8 +27,15 @@ import type {
   CourseSectionWithContent,
   CreateCourseInput,
   GeneratedSectionContent,
+  AwardXpResult,
 } from "@/db/types";
 import { getCurrentUserId } from "./auth";
+import {
+  onSectionCompleted,
+  onFlashcardReviewed,
+  onCourseCompleted,
+  onQuizCompleted,
+} from "./gamification";
 
 // ============================================================================
 // COURSE ACTIONS
@@ -222,19 +229,47 @@ export async function getSectionWithContent(
 }
 
 /**
- * Mark a section as complete
+ * Mark a section as complete and award XP
  */
 export async function markSectionComplete(
   sectionId: string,
-): Promise<CourseSection | null> {
+): Promise<{ section: CourseSection | null; gamification?: AwardXpResult }> {
   const section = await sectionRepository.markComplete(sectionId);
 
   if (section) {
-    // Also increment the completed sections count on the course
+    // Increment the completed sections count on the course
     await courseRepository.incrementCompletedSections(section.courseId);
+
+    // Award XP for section completion
+    const gamificationResult = await onSectionCompleted(sectionId);
+
+    // Check if course is now complete
+    const course = await courseRepository.findById(section.courseId);
+    if (course && course.completedSections >= course.sectionCount) {
+      // Award bonus XP for course completion
+      const courseResult = await onCourseCompleted(section.courseId);
+
+      // Combine results
+      if (gamificationResult && courseResult) {
+        return {
+          section,
+          gamification: {
+            ...courseResult,
+            xpAwarded: gamificationResult.xpAwarded + courseResult.xpAwarded,
+            bonusXp: gamificationResult.bonusXp + courseResult.bonusXp,
+            unlockedAchievements: [
+              ...gamificationResult.unlockedAchievements,
+              ...courseResult.unlockedAchievements,
+            ],
+          },
+        };
+      }
+    }
+
+    return { section, gamification: gamificationResult };
   }
 
-  return section ?? null;
+  return { section: null };
 }
 
 /**
@@ -334,10 +369,15 @@ export async function getSectionFlashcards(sectionId: string) {
 }
 
 /**
- * Update flashcard after review (spaced repetition)
+ * Update flashcard after review (spaced repetition) and award XP
  */
 export async function reviewFlashcard(flashcardId: string, isCorrect: boolean) {
-  return flashcardRepository.updateReview(flashcardId, isCorrect);
+  const result = await flashcardRepository.updateReview(flashcardId, isCorrect);
+
+  // Award XP for flashcard review (regardless of correctness)
+  const gamificationResult = await onFlashcardReviewed(flashcardId);
+
+  return { ...result, gamification: gamificationResult };
 }
 
 // ============================================================================
@@ -408,6 +448,34 @@ export async function resetSectionQuizzes(sectionId: string) {
     ...trueFalse.map((q) => trueFalseRepository.resetAttempt(q.id)),
     ...fillUps.map((q) => fillUpRepository.resetAttempt(q.id)),
   ]);
+}
+
+/**
+ * Submit a completed quiz and award XP
+ */
+export async function submitQuizResults(
+  sectionId: string,
+  correctAnswers: number,
+  totalQuestions: number,
+): Promise<{
+  score: number;
+  isPerfect: boolean;
+  gamification?: AwardXpResult;
+}> {
+  const score =
+    totalQuestions > 0
+      ? Math.round((correctAnswers / totalQuestions) * 100)
+      : 0;
+  const isPerfect = score === 100;
+
+  // Award XP for completing the quiz
+  const gamificationResult = await onQuizCompleted(sectionId, isPerfect);
+
+  return {
+    score,
+    isPerfect,
+    gamification: gamificationResult,
+  };
 }
 
 // ============================================================================

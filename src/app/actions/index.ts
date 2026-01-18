@@ -10,3 +10,4 @@
 export * from "./courses";
 export * from "./chat";
 export * from "./progress";
+export * from "./gamification";

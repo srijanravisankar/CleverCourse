@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
 import { logOut } from "@/app/actions/auth";
+import { SidebarGamification } from "@/components/gamification";
 
 import { CreateCourseDialog } from "@/components/course/CreateCourseDialog";
 import {
@@ -461,6 +462,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
               courseSidebarOpen ? "w-[280px] border-r" : "w-0",
             )}
           >
+            {/* Gamification Stats */}
+            <SidebarGamification />
+
             {/* Header */}
             <div className="border-b p-4 shrink-0">
               <div className="flex items-center justify-between">
