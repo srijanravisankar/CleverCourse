@@ -23,16 +23,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  generateAndCreateCourse,
-  type FileUpload,
-} from "@/lib/course-generator";
+import { generateFirstSection, type FileUpload } from "@/lib/course-generator";
 import type { CourseLevel, CourseTone } from "@/db/types";
 
 interface CreateCourseDialogProps {
   open: boolean;
   onClose: () => void;
-  onCourseCreated?: (courseId: string) => void;
+  onCourseCreated?: (courseId: string, sectionCount?: number) => void;
 }
 
 interface UploadedFileItem {
@@ -150,10 +147,11 @@ export function CreateCourseDialog({
 
       setGenerationStatus("generating");
       setGenerationMessage(
-        `Generating ${formData.sectionCount} sections with AI... This may take a few minutes.`,
+        `Generating first section... You'll be able to start learning as soon as it's ready!`,
       );
 
-      const result = await generateAndCreateCourse(
+      // Generate ONLY the first section (fast response)
+      const result = await generateFirstSection(
         {
           topic: formData.topic,
           level: formData.level,
@@ -173,11 +171,11 @@ export function CreateCourseDialog({
 
       if (result.success && result.courseId) {
         setGenerationStatus("complete");
-        setGenerationMessage("Course created successfully!");
+        setGenerationMessage("First section ready! Opening course...");
 
-        // Call the callback if provided
+        // Call the callback with courseId and section count for background generation
         if (onCourseCreated) {
-          onCourseCreated(result.courseId);
+          onCourseCreated(result.courseId, parseInt(formData.sectionCount));
         }
 
         // Close after a short delay
@@ -198,7 +196,7 @@ export function CreateCourseDialog({
           });
           setUploadedFiles([]);
           setGenerationStatus("idle");
-        }, 1500);
+        }, 1000);
       } else {
         setGenerationStatus("error");
         // Parse error message for user-friendly display

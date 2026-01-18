@@ -42,7 +42,7 @@ export function ChatPanel() {
         if (currentSection.articlePages?.length > 0) {
           contextType = "Article";
           content = currentSection.articlePages
-            .map((page) => `## ${page.title}\n${page.content}`)
+            .map((page) => `## ${page.pageTitle}\n${page.content}`)
             .join("\n\n");
         }
         break;
@@ -60,7 +60,7 @@ export function ChatPanel() {
         if (currentSection.mindMaps?.length > 0) {
           contextType = "Mind Map";
           content = currentSection.mindMaps
-            .map((map) => `Topic: ${map.title}\nData: ${map.data}`)
+            .map((map) => `Mind Map Data: ${map.data}`)
             .join("\n\n");
         }
         break;
@@ -71,7 +71,7 @@ export function ChatPanel() {
           content = currentSection.mcqQuestions
             .map(
               (q) =>
-                `Question: ${q.question}\nOptions: ${q.options}\nCorrect: ${q.correctAnswer}\nExplanation: ${q.explanation || "N/A"}`
+                `Question: ${q.question}\nOptions: ${q.options}\nCorrect Answer: ${q.answer}`,
             )
             .join("\n\n");
         }
@@ -83,7 +83,7 @@ export function ChatPanel() {
           content = currentSection.trueFalseQuestions
             .map(
               (q) =>
-                `Statement: ${q.statement}\nAnswer: ${q.isTrue ? "True" : "False"}\nExplanation: ${q.explanation || "N/A"}`
+                `Question: ${q.question}\nAnswer: ${q.answer ? "True" : "False"}\nExplanation: ${q.explanation || "N/A"}`,
             )
             .join("\n\n");
         }
@@ -94,8 +94,7 @@ export function ChatPanel() {
           contextType = "Fill in the Blanks Quiz";
           content = currentSection.fillUpQuestions
             .map(
-              (q) =>
-                `Sentence: ${q.sentence}\nAnswer: ${q.answer}\nExplanation: ${q.explanation || "N/A"}`
+              (q) => `Sentence: ${q.sentence}\nMissing Word: ${q.missingWord}`,
             )
             .join("\n\n");
         }
@@ -110,7 +109,8 @@ export function ChatPanel() {
     return {
       type: contextType,
       sectionTitle,
-      courseName: currentCourse?.title || currentCourse?.topic || "Unknown Course",
+      courseName:
+        currentCourse?.title || currentCourse?.topic || "Unknown Course",
       content,
     };
   }, [currentSection, activeView, currentCourse]);
@@ -240,13 +240,14 @@ export function ChatPanel() {
             <h3 className="font-semibold text-lg mb-2">Start a conversation</h3>
             {pageContext ? (
               <p className="text-sm">
-                Ask me anything about the <strong>{pageContext.type}</strong> you&apos;re viewing, 
-                or highlight text on the page and I&apos;ll help you understand it better.
+                Ask me anything about the <strong>{pageContext.type}</strong>{" "}
+                you&apos;re viewing, or highlight text on the page and I&apos;ll
+                help you understand it better.
               </p>
             ) : (
               <p className="text-sm">
-                Open an article, study material, or quiz to get context-aware help.
-                You can also highlight text on the page to ask about it.
+                Open an article, study material, or quiz to get context-aware
+                help. You can also highlight text on the page to ask about it.
               </p>
             )}
           </div>

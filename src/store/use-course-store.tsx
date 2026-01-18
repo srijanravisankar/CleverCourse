@@ -16,6 +16,15 @@ export type ViewType =
   | "fill"
   | "quiz";
 
+// Section generation status
+export type SectionStatus = "pending" | "generating" | "ready" | "error";
+
+export interface PendingSection {
+  sectionNumber: number;
+  status: SectionStatus;
+  error?: string;
+}
+
 interface CourseState {
   // View state
   activeView: ViewType;
@@ -25,6 +34,7 @@ interface CourseState {
   courses: Course[];
   setCourses: (courses: Course[]) => void;
   addCourse: (course: Course) => void;
+  updateCourse: (courseId: string, updates: Partial<Course>) => void;
 
   // Current course
   currentCourse: Course | null;
@@ -33,6 +43,17 @@ interface CourseState {
   // Sections for current course
   sections: CourseSection[];
   setSections: (sections: CourseSection[]) => void;
+  addSection: (section: CourseSection) => void;
+
+  // Pending/generating sections (not yet in DB)
+  pendingSections: PendingSection[];
+  setPendingSections: (sections: PendingSection[]) => void;
+  updatePendingSection: (
+    sectionNumber: number,
+    updates: Partial<PendingSection>,
+  ) => void;
+  removePendingSection: (sectionNumber: number) => void;
+  clearPendingSections: () => void;
 
   // Current active section with full content
   currentSection: CourseSectionWithContent | null;
@@ -59,6 +80,7 @@ const initialState = {
   courses: [],
   currentCourse: null,
   sections: [],
+  pendingSections: [] as PendingSection[],
   currentSection: null,
   activeSectionId: null,
   isLoadingCourses: false,
@@ -76,6 +98,16 @@ export const useCourseStore = create<CourseState>((set) => ({
     set((state) => ({
       courses: [course, ...state.courses],
     })),
+  updateCourse: (courseId, updates) =>
+    set((state) => ({
+      courses: state.courses.map((c) =>
+        c.id === courseId ? { ...c, ...updates } : c,
+      ),
+      currentCourse:
+        state.currentCourse?.id === courseId
+          ? { ...state.currentCourse, ...updates }
+          : state.currentCourse,
+    })),
 
   setCurrentCourse: (course) =>
     set({
@@ -86,6 +118,28 @@ export const useCourseStore = create<CourseState>((set) => ({
     }),
 
   setSections: (sections) => set({ sections }),
+  addSection: (section) =>
+    set((state) => ({
+      sections: [...state.sections, section].sort(
+        (a, b) => a.sectionNumber - b.sectionNumber,
+      ),
+    })),
+
+  // Pending sections management
+  setPendingSections: (pendingSections) => set({ pendingSections }),
+  updatePendingSection: (sectionNumber, updates) =>
+    set((state) => ({
+      pendingSections: state.pendingSections.map((s) =>
+        s.sectionNumber === sectionNumber ? { ...s, ...updates } : s,
+      ),
+    })),
+  removePendingSection: (sectionNumber) =>
+    set((state) => ({
+      pendingSections: state.pendingSections.filter(
+        (s) => s.sectionNumber !== sectionNumber,
+      ),
+    })),
+  clearPendingSections: () => set({ pendingSections: [] }),
 
   setCurrentSection: (section) => set({ currentSection: section }),
   setActiveSectionId: (id) => set({ activeSectionId: id }),

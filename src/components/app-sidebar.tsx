@@ -7,7 +7,6 @@ import {
   Brain,
   Gamepad2,
   Plus,
-  Command,
   Layers,
   BriefcaseBusiness,
   ListChecks,
@@ -23,6 +22,8 @@ import {
   LogOut,
   Moon,
   Sun,
+  RefreshCw,
+  Trash2,
 } from "lucide-react";
 
 import { CreateCourseDialog } from "@/components/course/CreateCourseDialog";
@@ -45,11 +46,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCourseStore, ViewType } from "@/store/use-course-store";
+import {
+  useCourseStore,
+  ViewType,
+  PendingSection,
+} from "@/store/use-course-store";
 import {
   getAllCourses,
   getCourseWithSections,
   getSectionWithContent,
+  generateCourseSection,
+  retryFailedSection,
+  deleteFailedSection,
 } from "@/app/actions/courses";
 import type { Course, CourseSection } from "@/db/types";
 import { cn } from "@/lib/utils";
@@ -93,6 +101,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
     setCurrentCourse,
     sections,
     setSections,
+    addSection,
+    pendingSections,
+    setPendingSections,
+    updatePendingSection,
+    removePendingSection,
     activeSectionId,
     setActiveSectionId,
     setCurrentSection,
@@ -166,8 +179,64 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
     }
   };
 
+  // Generate remaining sections in background
+  const generateRemainingSections = React.useCallback(
+    async (courseId: string, totalSections: number) => {
+      // Generate sections 2 through totalSections sequentially
+      for (let sectionNum = 2; sectionNum <= totalSections; sectionNum++) {
+        // Update status to generating
+        updatePendingSection(sectionNum, { status: "generating" });
+
+        try {
+          const result = await generateCourseSection(courseId, sectionNum);
+
+          if (result.success && result.sectionId) {
+            // Fetch the newly created section and add it
+            const sectionWithContent = await getSectionWithContent(
+              result.sectionId,
+            );
+            if (sectionWithContent) {
+              addSection({
+                id: sectionWithContent.id,
+                courseId: sectionWithContent.courseId,
+                sectionNumber: sectionWithContent.sectionNumber,
+                title: sectionWithContent.title,
+                isCompleted: sectionWithContent.isCompleted,
+                completedAt: sectionWithContent.completedAt,
+                previousContext: sectionWithContent.previousContext,
+                createdAt: sectionWithContent.createdAt,
+                updatedAt: sectionWithContent.updatedAt,
+              });
+            }
+            // Remove from pending
+            removePendingSection(sectionNum);
+          } else {
+            // Mark as error
+            updatePendingSection(sectionNum, {
+              status: "error",
+              error: result.error || "Failed to generate section",
+            });
+          }
+        } catch (error) {
+          // Mark as error
+          updatePendingSection(sectionNum, {
+            status: "error",
+            error: error instanceof Error ? error.message : "Generation failed",
+          });
+        }
+
+        // Small delay between sections to avoid rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    },
+    [updatePendingSection, addSection, removePendingSection],
+  );
+
   // Handle course creation success
-  const handleCourseCreated = async (courseId: string) => {
+  const handleCourseCreated = async (
+    courseId: string,
+    sectionCount?: number,
+  ) => {
     try {
       const fetchedCourses = await getAllCourses();
       setCourses(fetchedCourses);
@@ -175,6 +244,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
       const newCourse = fetchedCourses.find((c) => c.id === courseId);
       if (newCourse) {
         await handleSelectCourse(newCourse);
+
+        // If we have more than 1 section, set up pending sections for background generation
+        if (sectionCount && sectionCount > 1) {
+          const pendingSectionsList: PendingSection[] = [];
+          for (let i = 2; i <= sectionCount; i++) {
+            pendingSectionsList.push({
+              sectionNumber: i,
+              status: "pending",
+            });
+          }
+          setPendingSections(pendingSectionsList);
+
+          // Start background generation (non-blocking)
+          generateRemainingSections(courseId, sectionCount);
+        }
       }
     } catch (err) {
       console.error("Error fetching new course:", err);
@@ -289,7 +373,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
             <div className="border-t border-zinc-800 mt-auto pt-2 pb-1.5">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button title="Profile" className="flex items-center justify-center w-8 h-8 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all duration-200 cursor-pointer">
+                  <button
+                    title="Profile"
+                    className="flex items-center justify-center w-8 h-8 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all duration-200 cursor-pointer"
+                  >
                     <User className="size-4" />
                   </button>
                 </DropdownMenuTrigger>
@@ -297,7 +384,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                 <DropdownMenuContent side="right" align="end" className="w-48">
                   <DropdownMenuLabel>John Doe</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  
+
                   <DropdownMenuLabel className="text-xs font-normal text-muted-foreground py-1.5">
                     Theme
                   </DropdownMenuLabel>
@@ -309,7 +396,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                     <Moon className="size-4" />
                     <span>Dark</span>
                   </DropdownMenuItem>
-                  
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-red-400">
                     <LogOut className="size-4" />
@@ -388,12 +475,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                   <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                     <p>Create or select a course to get started</p>
                   </div>
-                ) : sections.length === 0 ? (
+                ) : sections.length === 0 && pendingSections.length === 0 ? (
                   <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                     {currentCourse.status === "generating" ? (
                       <div className="flex flex-col items-center gap-2">
                         <Loader2 className="size-5 animate-spin" />
-                        <p>Generating course content...</p>
+                        <p>Generating first section...</p>
                       </div>
                     ) : (
                       <p>No sections yet</p>
@@ -401,14 +488,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<"div">) {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-1">
+                    {/* Ready sections */}
                     {sections.map((section, index) => (
                       <CourseSectionItem
                         key={section.id}
                         section={section}
                         index={index}
-                        isLast={index === sections.length - 1}
+                        isLast={
+                          index === sections.length - 1 &&
+                          pendingSections.length === 0
+                        }
                         isActive={activeSectionId === section.id}
                         onSelect={() => handleSelectSection(section)}
+                      />
+                    ))}
+
+                    {/* Pending/Generating/Error sections */}
+                    {pendingSections.map((pending) => (
+                      <PendingSectionItem
+                        key={`pending-${pending.sectionNumber}`}
+                        pending={pending}
+                        isLast={
+                          pending.sectionNumber === currentCourse.sectionCount
+                        }
+                        courseId={currentCourse.id}
                       />
                     ))}
                   </div>
@@ -581,5 +684,222 @@ function CourseSectionItem({
         </CollapsibleContent>
       </div>
     </Collapsible>
+  );
+}
+
+/**
+ * MODULAR COMPONENT: WaveText
+ * Displays text with a wavy animation effect.
+ */
+function WaveText({ text }: { text: string }) {
+  return (
+    <span className="wave-text text-orange-500 text-xs font-medium">
+      {text.split("").map((char, i) => (
+        <span key={i} style={{ animationDelay: `${i * 0.04}s` }}>
+          {char === " " ? "\u00A0" : char}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * MODULAR COMPONENT: PendingSectionItem
+ * Displays pending, generating, or error sections with appropriate animations.
+ */
+function PendingSectionItem({
+  pending,
+  isLast,
+  courseId,
+}: {
+  pending: PendingSection;
+  isLast: boolean;
+  courseId: string;
+}) {
+  const [isRetrying, setIsRetrying] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const { updatePendingSection, removePendingSection, addSection, sections } =
+    useCourseStore();
+
+  const handleRetry = async () => {
+    if (isRetrying) return;
+
+    setIsRetrying(true);
+    updatePendingSection(pending.sectionNumber, {
+      status: "generating",
+      error: undefined,
+    });
+
+    try {
+      const result = await retryFailedSection(courseId, pending.sectionNumber);
+
+      if (result.success && result.sectionId) {
+        // Fetch the newly created section and add it
+        const sectionWithContent = await getSectionWithContent(
+          result.sectionId,
+        );
+        if (sectionWithContent) {
+          addSection({
+            id: sectionWithContent.id,
+            courseId: sectionWithContent.courseId,
+            sectionNumber: sectionWithContent.sectionNumber,
+            title: sectionWithContent.title,
+            isCompleted: sectionWithContent.isCompleted,
+            completedAt: sectionWithContent.completedAt,
+            previousContext: sectionWithContent.previousContext,
+            createdAt: sectionWithContent.createdAt,
+            updatedAt: sectionWithContent.updatedAt,
+          });
+        }
+        removePendingSection(pending.sectionNumber);
+      } else {
+        updatePendingSection(pending.sectionNumber, {
+          status: "error",
+          error: result.error || "Failed to generate section",
+        });
+      }
+    } catch (error) {
+      updatePendingSection(pending.sectionNumber, {
+        status: "error",
+        error: error instanceof Error ? error.message : "Retry failed",
+      });
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (isDeleting) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteFailedSection(courseId, pending.sectionNumber);
+      removePendingSection(pending.sectionNumber);
+    } catch (error) {
+      console.error("Failed to delete section:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const isGenerating = pending.status === "generating" || isRetrying;
+  const isError = pending.status === "error" && !isRetrying;
+  const isPending = pending.status === "pending";
+
+  return (
+    <div className={cn("flex flex-col", isError && "section-error")}>
+      <div
+        className={cn(
+          "flex items-center gap-2 w-full px-2 py-2 text-left text-sm font-medium rounded-md transition-colors",
+          "text-muted-foreground/60 cursor-not-allowed bg-muted/30",
+          isError && "bg-red-500/10",
+        )}
+      >
+        {/* Section number badge with animations */}
+        <div className="relative">
+          <div
+            className={cn(
+              "flex items-center justify-center size-6 rounded-full text-xs font-bold shrink-0 -ml-1 transition-all",
+              isGenerating && "section-generating bg-orange-500 text-white",
+              isError && "bg-red-500 text-white",
+              isPending && "bg-muted text-muted-foreground",
+            )}
+          >
+            {isGenerating ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : isError ? (
+              <AlertCircle className="size-3.5" />
+            ) : (
+              pending.sectionNumber
+            )}
+          </div>
+
+          {/* Pulsing ring overlay for generating state */}
+          {isGenerating && (
+            <div className="absolute inset-0 -ml-1 size-6 rounded-full generating-border opacity-60" />
+          )}
+        </div>
+
+        {/* Section title/status with wavy animation */}
+        <span className="truncate flex-1">
+          {isGenerating ? (
+            <WaveText text={`Section ${pending.sectionNumber}...`} />
+          ) : isError ? (
+            <span className="text-red-500 text-xs">
+              {pending.error || "Generation failed"}
+            </span>
+          ) : (
+            <span className="text-muted-foreground/50">
+              Section {pending.sectionNumber}
+            </span>
+          )}
+        </span>
+
+        {/* Error actions */}
+        {isError && (
+          <div className="flex items-center gap-1 shrink-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleRetry}
+                  disabled={isRetrying}
+                  className="p-1 rounded hover:bg-muted text-orange-500 hover:text-orange-400 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={cn("size-3.5", isRetrying && "animate-spin")}
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Retry generation</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="p-1 rounded hover:bg-muted text-red-500 hover:text-red-400 transition-colors disabled:opacity-50"
+                >
+                  <Trash2
+                    className={cn("size-3.5", isDeleting && "animate-pulse")}
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Remove section</TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+
+        {/* Loading indicator for pending/generating */}
+        {(isPending || isGenerating) && !isError && (
+          <div className="shrink-0 pr-1">
+            <div className="flex gap-0.5">
+              <div
+                className="size-1 rounded-full bg-muted-foreground/40 animate-bounce"
+                style={{ animationDelay: "0ms" }}
+              />
+              <div
+                className="size-1 rounded-full bg-muted-foreground/40 animate-bounce"
+                style={{ animationDelay: "150ms" }}
+              />
+              <div
+                className="size-1 rounded-full bg-muted-foreground/40 animate-bounce"
+                style={{ animationDelay: "300ms" }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Connector line (if not last) */}
+      {!isLast && (
+        <div
+          className={cn(
+            "ml-4 h-2 border-l",
+            isError ? "border-red-500/30" : "border-zinc-700/50",
+          )}
+        />
+      )}
+    </div>
   );
 }
